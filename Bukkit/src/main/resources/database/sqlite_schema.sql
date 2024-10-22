@@ -15,3 +15,9 @@ CREATE TABLE `items` (
     `collected`  BOOLEAN,
     PRIMARY KEY (`id`)
 );
+
+CREATE INDEX `expired_items` ON `items` (`buyer_id`, `time`, `collected`);
+
+CREATE INDEX `collection_box` ON `items` (`buyer_id`, `collected`);
+
+CREATE INDEX `history` ON `items` (`owner_id`, `buyer_id`);

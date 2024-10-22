@@ -16,3 +16,9 @@ CREATE TABLE `items` (
     PRIMARY KEY (`id`)
 ) CHARACTER SET utf8
   COLLATE utf8_unicode_ci;
+
+CREATE INDEX `expired_items` ON `items` (`buyer_id`, `time`, `collected`);
+
+CREATE INDEX `collection_box` ON `items` (`buyer_id`, `collected`);
+
+CREATE INDEX `history` ON `items` (`owner_id`, `buyer_id`);
