@@ -141,6 +141,8 @@ public class Config {
         @Configuration
         @NoArgsConstructor(access = AccessLevel.PRIVATE)
         public static class Advanced {
+            @Comment({"Maximum lifetime for history registries", "Set to \"0\" to not delete history messages"})
+            private String cullData = "20 DAYS";
             private int poolSize = 10;
             private int minIdle = 10;
             private int maxLifetime = 1800000;

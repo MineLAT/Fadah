@@ -1,5 +1,6 @@
 package info.preva1l.fadah.data.handler;
 
+import com.google.common.base.Enums;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import info.preva1l.fadah.Fadah;
@@ -38,11 +39,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 public class HikariHandler implements DatabaseHandler {
 
     private static final String DATABASE_FILE_NAME = "FadahData.db";
+    private static final String SQL_CULL = "DELETE FROM `items` WHERE `update` < ? AND `collected` = ?;";
 
     private final Config.Database conf = Config.i().getDatabase();
     private final Map<Class<?>, SqlDao<?>> daos = new HashMap<>();
@@ -140,6 +143,27 @@ public class HikariHandler implements DatabaseHandler {
             migrateCollectionBox(con);
             migrateExpiredItems(con);
         }, "Failed to create database table.");
+
+        // Cull old data
+        final String cullData = conf.getAdvanced().getCullData().trim();
+        if (!cullData.equals("0")) {
+            final String[] split = cullData.split(" ", 2);
+            final TimeUnit unit = Enums.getIfPresent(TimeUnit.class, split.length > 1 ? split[1] : "DAYS").or(TimeUnit.DAYS);
+            try {
+                final long time = Long.parseLong(split[0]);
+                final long update = System.currentTimeMillis() - unit.toMillis(time);
+                connect(con -> {
+                    try (PreparedStatement stmt = con.prepareStatement(SQL_CULL)) {
+                        stmt.setLong(1, update);
+                        stmt.setBoolean(2, true);
+
+                        stmt.execute();
+                    }
+                });
+            } catch (NumberFormatException e) {
+                Fadah.getConsole().log(Level.WARNING, "The time '" + cullData + "' is not a valid number", e);
+            }
+        }
 
         connected = true;
     }
