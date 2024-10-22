@@ -28,7 +28,7 @@ public class ExpiredItemsHikariDao extends SqlDao<ExpiredItems> {
         statement(Statement.SELECT, """
                         SELECT `uuid`, `owner_id`, `item`, `update`
                         FROM `items`
-                        WHERE `owner_id` = ? AND `time` < ? AND `collected` = ? AND `buyer_id` IS NULL;
+                        WHERE `owner_id` = ? AND `time` < ? AND (`collected` = ? OR `collected` IS NULL) AND `buyer_id` IS NULL;
                         """);
         statement(Statement.INSERT, """
                         INSERT INTO `items` (`uuid`, `owner_id`, `item`, `time`, `update`, `collected`)
