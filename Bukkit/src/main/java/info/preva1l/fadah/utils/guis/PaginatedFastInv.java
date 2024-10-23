@@ -78,6 +78,7 @@ public abstract class PaginatedFastInv extends FastInv {
         needsClearing = true;
         
         for (int i = 0; i < maxItemsPerPage; i++) {
+            removeItem(paginationMappings.get(i));
             index = maxItemsPerPage * page + i;
             if (index >= paginatedItems.size()) continue;
             PaginatedItem item = paginatedItems.get(index);

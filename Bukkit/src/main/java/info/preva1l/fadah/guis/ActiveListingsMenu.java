@@ -51,8 +51,9 @@ public class ActiveListingsMenu extends PaginatedFastInv {
                             TimeUtil.formatTimeUntil(listing.getDeletionDate())));
 
             addPaginationItem(new PaginatedItem(itemStack.build(), e -> {
-                listing.cancel(viewer);
-                updatePagination();
+                if (listing.cancel(viewer)) {
+                    updatePagination();
+                }
             }));
         }
     }

@@ -17,7 +17,6 @@ import info.preva1l.fadah.multiserver.Message;
 import info.preva1l.fadah.multiserver.Payload;
 import info.preva1l.fadah.utils.TaskManager;
 import info.preva1l.fadah.utils.logging.TransactionLogger;
-import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -31,14 +30,14 @@ import java.util.UUID;
 public final class CurrentListing extends Listing {
 
     public CurrentListing(@NotNull UUID id, @NotNull UUID owner, @NotNull String ownerName,
-                          @NotNull ItemStack itemStack, @NotNull String categoryID, double price,
+                          @NotNull ItemStack itemStack, @NotNull String categoryID, @NotNull String currency, double price,
                           double tax, long creationDate, long deletionDate, boolean biddable, List<Bid> bids) {
-        super(id, owner, ownerName, itemStack, categoryID, price, tax, creationDate, deletionDate, biddable, bids);
+        super(id, owner, ownerName, itemStack, categoryID, currency, price, tax, creationDate, deletionDate, biddable, bids);
     }
 
     @Override
     public void purchase(@NotNull Player buyer) {
-        if (!Fadah.getINSTANCE().getEconomy().has(buyer, this.getPrice())) {
+        if (!getCurrency().canAfford(buyer, this.getPrice())) {
             buyer.sendMessage(Lang.i().getPrefix() + Lang.i().getErrors().getTooExpensive());
             return;
         }
@@ -47,10 +46,9 @@ public final class CurrentListing extends Listing {
             return;
         }
         // Money Transfer
-        Economy eco = Fadah.getINSTANCE().getEconomy();
-        eco.withdrawPlayer(buyer, this.getPrice());
+        getCurrency().withdraw(buyer, this.getPrice());
         double taxed = (this.getTax()/100) * this.getPrice();
-        eco.depositPlayer(Bukkit.getOfflinePlayer(this.getOwner()), this.getPrice() - taxed);
+        getCurrency().add(Bukkit.getOfflinePlayer(this.getOwner()), this.getPrice() - taxed);
 
         // Remove Listing
         if (!Config.i().getBroker().isEnabled()) {
@@ -68,18 +66,19 @@ public final class CurrentListing extends Listing {
         // Add to collection box
         ItemStack itemStack = this.getItemStack().clone();
         CollectableItem collectableItem = new CollectableItem(this.getId(), this.getOwner(), itemStack, Instant.now().toEpochMilli());
-        CollectionBoxCache.addItem(buyer.getUniqueId(), collectableItem);
-        DatabaseManager.getInstance().save(CollectionBox.class, CollectionBox.of(buyer.getUniqueId()));
+        CollectionBox box = CollectionBox.of(buyer.getUniqueId());
+        box.collectableItems().add(collectableItem);
+        DatabaseManager.getInstance().save(CollectionBox.class, box);
 
         // Send Cache Updates
-        Message.builder()
-                .type(Message.Type.COLLECTION_BOX_UPDATE)
-                .payload(Payload.withUUID(buyer.getUniqueId()))
-                .build().send(Fadah.getINSTANCE().getBroker());
-        Message.builder()
-                .type(Message.Type.EXPIRED_LISTINGS_UPDATE)
-                .payload(Payload.withUUID(this.getOwner()))
-                .build().send(Fadah.getINSTANCE().getBroker());
+        if (!Config.i().getBroker().isEnabled()) {
+            CollectionBoxCache.addItem(buyer.getUniqueId(), collectableItem);
+        } else {
+            Message.builder()
+                    .type(Message.Type.COLLECTION_BOX_UPDATE)
+                    .payload(Payload.withUUID(buyer.getUniqueId()))
+                    .build().send(Fadah.getINSTANCE().getBroker());
+        }
 
         // Notify Both Players
         Lang.sendMessage(buyer, String.join("\n", Lang.i().getNotifications().getNewItem()));
@@ -124,13 +123,19 @@ public final class CurrentListing extends Listing {
             DatabaseManager.getInstance().delete(Listing.class, this);
         }
 
+
         CollectableItem collectableItem = new CollectableItem(this.getId(), this.getOwner(), this.getItemStack(), Instant.now().toEpochMilli());
-        ExpiredListingsCache.addItem(getOwner(), collectableItem);
-        Message.builder()
-                .type(Message.Type.EXPIRED_LISTINGS_UPDATE)
-                .payload(Payload.withUUID(this.getOwner()))
-                .build().send(Fadah.getINSTANCE().getBroker());
-        DatabaseManager.getInstance().save(ExpiredItems.class, ExpiredItems.of(getOwner()));
+        ExpiredItems items = ExpiredItems.of(getOwner());
+        items.collectableItems().add(collectableItem);
+        DatabaseManager.getInstance().save(ExpiredItems.class, items);
+        if (!Config.i().getBroker().isEnabled()) {
+            ExpiredListingsCache.addItem(getOwner(), collectableItem);
+        } else {
+            Message.builder()
+                    .type(Message.Type.EXPIRED_LISTINGS_UPDATE)
+                    .payload(Payload.withUUID(this.getOwner()))
+                    .build().send(Fadah.getINSTANCE().getBroker());
+        }
 
         boolean isAdmin = !this.isOwner(canceller);
         TransactionLogger.listingRemoval(this, isAdmin);
@@ -145,6 +150,6 @@ public final class CurrentListing extends Listing {
     }
 
     public StaleListing getAsStale() {
-        return new StaleListing(id, owner, ownerName, itemStack, categoryID, price, tax, creationDate, deletionDate, biddable, bids);
+        return new StaleListing(id, owner, ownerName, itemStack, categoryID, currencyId, price, tax, creationDate, deletionDate, biddable, bids);
     }
 }

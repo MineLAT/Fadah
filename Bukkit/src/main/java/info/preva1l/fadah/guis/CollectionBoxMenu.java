@@ -80,7 +80,7 @@ public class CollectionBoxMenu extends PaginatedFastInv {
                         return;
                     }
                     CollectionBoxCache.removeItem(owner.getUniqueId(), collectableItem);
-                    DatabaseManager.getInstance().deleteSpecific(CollectionBox.class, new CollectionBox(owner.getUniqueId(), new ArrayList<>(collectionBox.values())), collectableItem);
+                    DatabaseManager.getInstance().save(CollectionBox.class, new CollectionBox(owner.getUniqueId(), collectionBox));
                     viewer.getInventory().setItem(slot, collectableItem.itemStack());
 
                     updatePagination();

@@ -10,6 +10,9 @@ import info.preva1l.fadah.commands.MigrateCommand;
 import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
 import info.preva1l.fadah.config.Menus;
+import info.preva1l.fadah.currency.CurrencyRegistry;
+import info.preva1l.fadah.currency.RedisEconomyCurrency;
+import info.preva1l.fadah.currency.VaultCurrency;
 import info.preva1l.fadah.data.DatabaseManager;
 import info.preva1l.fadah.data.DatabaseType;
 import info.preva1l.fadah.hooks.HookManager;
@@ -21,6 +24,8 @@ import info.preva1l.fadah.migrator.AuctionHouseMigrator;
 import info.preva1l.fadah.migrator.MigratorManager;
 import info.preva1l.fadah.migrator.zAuctionHouseMigrator;
 import info.preva1l.fadah.multiserver.Broker;
+import info.preva1l.fadah.multiserver.Message;
+import info.preva1l.fadah.multiserver.Payload;
 import info.preva1l.fadah.multiserver.RedisBroker;
 import info.preva1l.fadah.records.*;
 import info.preva1l.fadah.utils.Metrics;
@@ -35,12 +40,10 @@ import info.preva1l.fadah.utils.logging.TransactionLogger;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-import net.milkbowl.vault.economy.Economy;
 import net.william278.desertwell.util.UpdateChecker;
 import net.william278.desertwell.util.Version;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
-import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -56,20 +59,16 @@ import java.util.stream.Stream;
 public final class Fadah extends JavaPlugin {
     private static final int METRICS_ID = 21651;
     private static final int SPIGOT_ID = 116157;
-    private Version pluginVersion;
-
     @Getter private static Fadah INSTANCE;
     @Getter @Setter private static NamespacedKey customItemKey;
-
     @Getter private static Logger console;
     @Getter private final Logger transactionLogger = Logger.getLogger("AuctionHouse-Transactions");
-
+    private Version pluginVersion;
     @Getter private BasicConfig categoriesFile;
     @Getter private BasicConfig menusFile;
 
     @Getter private Broker broker;
     @Getter private CommandManager commandManager;
-    @Getter private Economy economy;
     @Getter private HookManager hookManager;
     @Getter private LayoutManager layoutManager;
 
@@ -86,16 +85,7 @@ public final class Fadah extends JavaPlugin {
         hookManager = new HookManager();
         adventureAudience = BukkitAudiences.create(this);
 
-        if (!hookIntoVault()) {
-            getConsole().severe("------------------------------------------");
-            getConsole().severe("Disabled due to no Vault dependency found!");
-            getConsole().severe("------------------------------------------");
-            Bukkit.getPluginManager().disablePlugin(this);
-            return;
-        } else {
-            getConsole().info("Vault Hooked!");
-        }
-
+        loadCurrencies();
         loadMenus();
         loadFiles();
         loadDataAndPopulateCaches();
@@ -142,15 +132,25 @@ public final class Fadah extends JavaPlugin {
         return () -> {
             for (UUID key : ListingCache.getListings().keySet()) {
                 Listing listing = ListingCache.getListing(key);
+                if (listing == null) continue;
                 if (Instant.now().toEpochMilli() >= listing.getDeletionDate()) {
                     ListingCache.removeListing(listing);
                     if (Config.i().getDatabase().getType() == DatabaseType.MONGO) {
                         DatabaseManager.getInstance().delete(Listing.class, listing);
                     }
 
-                    CollectableItem item = new CollectableItem(listing.getId(), listing.getOwner(), listing.getItemStack(), Instant.now().toEpochMilli());
-                    ExpiredListingsCache.addItem(listing.getOwner(), item);
-                    DatabaseManager.getInstance().save(ExpiredItems.class, ExpiredItems.of(listing.getOwner()));
+                    CollectableItem collectableItem = new CollectableItem(listing.getId(), listing.getOwner(), listing.getItemStack(), Instant.now().toEpochMilli());
+                    ExpiredItems items = ExpiredItems.of(listing.getOwner());
+                    items.collectableItems().add(collectableItem);
+                    DatabaseManager.getInstance().save(ExpiredItems.class, items);
+                    if (!Config.i().getBroker().isEnabled()) {
+                        ExpiredListingsCache.addItem(listing.getOwner(), collectableItem);
+                    } else {
+                        Message.builder()
+                                .type(Message.Type.EXPIRED_LISTINGS_UPDATE)
+                                .payload(Payload.withUUID(listing.getOwner()))
+                                .build().send(Fadah.getINSTANCE().getBroker());
+                    }
 
                     TransactionLogger.listingExpired(listing);
 
@@ -198,24 +198,6 @@ public final class Fadah extends JavaPlugin {
                 new BasicConfig(this, "menus/view-listings.yml")
         ).forEach(layoutManager::loadLayout);
     }
-
-    private boolean hookIntoVault() {
-        getConsole().info("Hooking into Vault...");
-        if (INSTANCE.getServer().getPluginManager().getPlugin("Vault") == null) {
-            getConsole().severe("Vault not installed");
-            return false;
-        }
-
-        RegisteredServiceProvider<Economy> rsp = Bukkit.getServer().getServicesManager().getRegistration(Economy.class);
-        if (rsp == null) {
-            getConsole().severe("No Economy Plugin Installed");
-            return false;
-        }
-        economy = rsp.getProvider();
-
-        return true;
-    }
-
 
     private void loadDataAndPopulateCaches() {
         DatabaseManager.getInstance(); // Make the connection happen during startup
@@ -274,11 +256,22 @@ public final class Fadah extends JavaPlugin {
         getConsole().info("%s Migrators Loaded!".formatted(migratorManager.getMigratorNames().size()));
     }
 
+    private void loadCurrencies() {
+        getConsole().info("Loading currencies...");
+        Stream.of(
+                new VaultCurrency(),
+                new RedisEconomyCurrency()
+        ).forEach(CurrencyRegistry::register);
+        getConsole().info("Currencies Loaded!");
+    }
+
     private void setupMetrics() {
         getConsole().info("Starting Metrics...");
 
         metrics = new Metrics(this, METRICS_ID);
         metrics.addCustomChart(new Metrics.SingleLineChart("items_listed", () -> ListingCache.getListings().size()));
+        metrics.addCustomChart(new Metrics.SimplePie("database_type", () -> Config.i().getDatabase().getType().getFriendlyName()));
+        metrics.addCustomChart(new Metrics.SimplePie("multi_server", () -> Config.i().getBroker().isEnabled() ? Config.i().getBroker().getType().getDisplayName() : "None"));
 
         getConsole().info("Metrics Logging Started!");
     }
@@ -336,6 +329,11 @@ public final class Fadah extends JavaPlugin {
 
     public CompletableFuture<Void> loadPlayerData(UUID uuid) {
         return CompletableFuture.supplyAsync(() -> {
+            boolean needsFixing = DatabaseManager.getInstance().needsFixing(uuid).join();
+            if (needsFixing) {
+                DatabaseManager.getInstance().fixPlayerData(uuid).join();
+            }
+
             Optional<CollectionBox> collectionBox = DatabaseManager.getInstance().get(CollectionBox.class, uuid).join();
             collectionBox.ifPresent(list -> CollectionBoxCache.update(uuid, list.collectableItems()));
 
@@ -344,7 +342,6 @@ public final class Fadah extends JavaPlugin {
 
             Optional<History> history = DatabaseManager.getInstance().get(History.class, uuid).join();
             history.ifPresent(list -> HistoricItemsCache.update(uuid, list.collectableItems()));
-
             return null;
         });
     }
@@ -364,5 +361,6 @@ public final class Fadah extends JavaPlugin {
         Fadah.getINSTANCE().getLayoutManager().reloadLayout(LayoutManager.MenuType.HISTORY);
         Fadah.getINSTANCE().getCategoriesFile().load();
         CategoryCache.update();
+        loadBroker();
     }
 }

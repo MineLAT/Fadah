@@ -81,7 +81,7 @@ public class ExpiredListingsMenu extends PaginatedFastInv {
                         return;
                     }
                     ExpiredListingsCache.removeItem(owner.getUniqueId(), collectableItem);
-                    DatabaseManager.getInstance().deleteSpecific(ExpiredItems.class, ExpiredItems.of(owner.getUniqueId()), collectableItem);
+                    DatabaseManager.getInstance().save(ExpiredItems.class, ExpiredItems.of(owner.getUniqueId()));
                     viewer.getInventory().setItem(slot, collectableItem.itemStack());
 
                     updatePagination();
