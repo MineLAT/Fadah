@@ -12,7 +12,9 @@ public interface DatabaseHandler extends DataHandler {
     void wipeDatabase();
 
 
-    V2Fixer getV2Fixer();
+    default V2Fixer getV2Fixer() {
+        return V2Fixer.EMPTY;
+    }
     default void fixData(UUID player) {
         getV2Fixer().fixCollectionBox(player);
         getV2Fixer().fixExpiredItems(player);

@@ -11,6 +11,7 @@ import info.preva1l.fadah.data.dao.hikari.CollectionBoxHikariDao;
 import info.preva1l.fadah.data.dao.hikari.ExpiredItemsHikariDao;
 import info.preva1l.fadah.data.dao.hikari.HistoryHikariDao;
 import info.preva1l.fadah.data.dao.hikari.ListingHikariDao;
+import info.preva1l.fadah.data.fixers.HikariFixer;
 import info.preva1l.fadah.records.CollectionBox;
 import info.preva1l.fadah.records.ExpiredItems;
 import info.preva1l.fadah.records.History;
@@ -30,14 +31,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -54,6 +55,7 @@ public class HikariHandler implements DatabaseHandler {
     @Getter
     private boolean connected = false;
     private HikariDataSource hikari;
+    private HikariFixer fixer;
 
     public HikariHandler() {
         this.driverClass = switch (getType()) {
@@ -92,6 +94,7 @@ public class HikariHandler implements DatabaseHandler {
 
             backup(file);
         } else {
+            config.setAutoCommit(true);
             config.setJdbcUrl(conf.getUri());
             if (!conf.getUri().contains("@")) {
                 config.setUsername(conf.getUsername());
@@ -124,9 +127,12 @@ public class HikariHandler implements DatabaseHandler {
 
         registerDaos();
 
+        this.fixer = new HikariFixer(this);
+
         // Execute schema
         connect(con -> {
-            if (isTablePresent(con, "items")) {
+            final Set<String> tables = getTables(con);
+            if (tables.contains("items")) {
                 return;
             }
 
@@ -139,9 +145,21 @@ public class HikariHandler implements DatabaseHandler {
                 stmt.executeBatch();
             }
 
-            migrateListings(con);
-            migrateCollectionBox(con);
-            migrateExpiredItems(con);
+            if (tables.contains("listings")) {
+                this.fixer.listings(con);
+            }
+            if (tables.contains("collection_box")) {
+                this.fixer.collectionBox(con);
+            }
+            if (tables.contains("collection_boxV2")) {
+                this.fixer.collectionBoxV2(con);
+            }
+            if (tables.contains("expired_items")) {
+                this.fixer.expiredItems(con);
+            }
+            if (tables.contains("expired_itemsV2")) {
+                this.fixer.expiredItemsV2(con);
+            }
         }, "Failed to create database table.");
 
         // Cull old data
@@ -166,83 +184,6 @@ public class HikariHandler implements DatabaseHandler {
         }
 
         connected = true;
-    }
-
-    private void migrateListings(@NotNull Connection con) throws SQLException {
-        if (!isTablePresent(con, "listings")) {
-            return;
-        }
-
-        try (PreparedStatement stmt = con.prepareStatement("SELECT * FROM `listings`"); PreparedStatement insert = con.prepareStatement(getDao(Listing.class).sql(SqlDao.Statement.INSERT))) {
-            final ResultSet result = stmt.executeQuery();
-
-            while (result.next()) {
-                insert.setString(1, result.getString("uuid"));
-                insert.setString(2, result.getString("ownerUUID"));
-                insert.setString(3, result.getString("ownerName"));
-                insert.setString(4, result.getString("itemStack"));
-                insert.setString(5, result.getString("category"));
-                insert.setDouble(6, result.getDouble("price"));
-                insert.setDouble(7, result.getDouble("tax"));
-                insert.setLong(8, result.getLong("creationDate"));
-                insert.setBoolean(9, result.getBoolean("biddable"));
-                insert.setString(10, "");
-                insert.setLong(11, Instant.now().toEpochMilli());
-
-                insert.addBatch();
-            }
-
-            insert.executeBatch();
-        }
-    }
-
-    private void migrateCollectionBox(@NotNull Connection con) throws SQLException {
-        if (!isTablePresent(con, "collection_box")) {
-            return;
-        }
-
-        final long time = Instant.now().minus(2, ChronoUnit.DAYS).toEpochMilli();
-        try (PreparedStatement stmt = con.prepareStatement("SELECT * FROM `collection_box`"); PreparedStatement insert = con.prepareStatement(getDao(CollectionBox.class).sql(SqlDao.Statement.INSERT))) {
-            final ResultSet result = stmt.executeQuery();
-
-            while (result.next()) {
-                insert.setString(1, UUID.randomUUID().toString());
-                insert.setString(2, DataHandler.DUMMY_ID.toString());
-                insert.setString(3, result.getString("playerUUID"));
-                insert.setString(4, result.getString("itemStack"));
-                insert.setLong(5, time);
-                insert.setLong(6, result.getLong("dateAdded"));
-                insert.setBoolean(7, false);
-
-                insert.addBatch();
-            }
-
-            insert.executeBatch();
-        }
-    }
-
-    private void migrateExpiredItems(@NotNull Connection con) throws SQLException {
-        if (!isTablePresent(con, "expired_items")) {
-            return;
-        }
-
-        final long time = Instant.now().minus(2, ChronoUnit.DAYS).toEpochMilli();
-        try (PreparedStatement stmt = con.prepareStatement("SELECT * FROM `expired_items`"); PreparedStatement insert = con.prepareStatement(getDao(ExpiredItems.class).sql(SqlDao.Statement.INSERT))) {
-            final ResultSet result = stmt.executeQuery();
-
-            while (result.next()) {
-                insert.setString(1, UUID.randomUUID().toString());
-                insert.setString(2, result.getString("playerUUID"));
-                insert.setString(3, result.getString("itemStack"));
-                insert.setLong(4, time);
-                insert.setLong(5, result.getLong("dateAdded"));
-                insert.setBoolean(6, false);
-
-                insert.addBatch();
-            }
-
-            insert.executeBatch();
-        }
     }
 
     @Override
@@ -325,7 +266,7 @@ public class HikariHandler implements DatabaseHandler {
      * @return The DAO for the specified class.
      */
     @SuppressWarnings("unchecked")
-    private <T> SqlDao<T> getDao(@NotNull Class<?> clazz) {
+    public <T> SqlDao<T> getDao(@NotNull Class<?> clazz) {
         if (!daos.containsKey(clazz))
             throw new IllegalArgumentException("No DAO registered for class " + clazz.getName());
         return (SqlDao<T>) daos.get(clazz);
@@ -374,15 +315,15 @@ public class HikariHandler implements DatabaseHandler {
         }
     }
 
-    private static boolean isTablePresent(@NotNull Connection con, @NotNull String tableName) throws SQLException {
+    @NotNull
+    private static Set<String> getTables(@NotNull Connection con) throws SQLException {
+        final Set<String> tables = new HashSet<>();
         try (ResultSet set = con.getMetaData().getTables(con.getCatalog(), null, "%", null)) {
             while (set.next()) {
-                if (set.getString(3).equalsIgnoreCase(tableName)) {
-                    return true;
-                }
+                tables.add(set.getString(3));
             }
         }
-        return false;
+        return tables;
     }
 
     @FunctionalInterface
