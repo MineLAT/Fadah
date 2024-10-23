@@ -24,8 +24,10 @@ public final class DatabaseManager {
     private DatabaseManager() {
         Fadah.getConsole().info("Connecting to Database and populating caches...");
         databaseHandlers.put(DatabaseType.SQLITE, HikariHandler.class);
+        databaseHandlers.put(DatabaseType.H2, HikariHandler.class);
         databaseHandlers.put(DatabaseType.MARIADB, HikariHandler.class);
         databaseHandlers.put(DatabaseType.MYSQL, HikariHandler.class);
+        databaseHandlers.put(DatabaseType.POSTGRESQL, HikariHandler.class);
         databaseHandlers.put(DatabaseType.MONGO, MongoHandler.class);
 
         this.handler = initHandler();
