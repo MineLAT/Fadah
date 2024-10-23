@@ -28,7 +28,7 @@ public class CollectionBoxHikariDao extends SqlDao<CollectionBox> {
         statement(Statement.SELECT, """
                         SELECT `uuid`, `owner_id`, `item`, `update`
                         FROM `items`
-                        WHERE `buyer_id` = ? AND `collected` = ?;
+                        WHERE `buyer_id` = ? AND (`collected` = ? OR `collected` IS NULL);
                         """);
         statement(Statement.INSERT, """
                         INSERT INTO `items` (`uuid`, `owner_id`, `buyer_id`, `item`, `time`, `update`, `collected`)
