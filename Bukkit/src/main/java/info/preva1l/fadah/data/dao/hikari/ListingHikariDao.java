@@ -58,13 +58,23 @@ public class ListingHikariDao extends SqlDao<Listing> {
             final UUID ownerId = UUID.fromString(result.getString("owner_id"));
             final String ownerName = result.getString("owner_name");
             final ItemStack itemStack = ItemSerializer.deserialize(result.getString("item"))[0];
-            final String category = result.getString("category");
+            final String temp = result.getString("category");
+            final String category;
+            final String currency;
+            if (temp.contains("~")) {
+                final String[] split = temp.split("~");
+                category = split[0];
+                currency = split[1];
+            } else {
+                category = temp;
+                currency = "vault";
+            }
             final double price = result.getDouble("price");
             final double tax = result.getDouble("tax");
             final long creationDate = result.getLong("time");
             final long deletionDate = creationDate + TimeUnit.DAYS.toMillis(2);
             final boolean biddable = result.getBoolean("biddable");
-            listing = new CurrentListing(id, ownerId, ownerName, itemStack, category, price, tax, creationDate, deletionDate, biddable, List.of());
+            listing = new CurrentListing(id, ownerId, ownerName, itemStack, category, currency, price, tax, creationDate, deletionDate, biddable, List.of());
         }
         return listing;
     }
@@ -81,13 +91,23 @@ public class ListingHikariDao extends SqlDao<Listing> {
             final UUID ownerId = UUID.fromString(result.getString("owner_id"));
             final String ownerName = result.getString("owner_name");
             final ItemStack itemStack = ItemSerializer.deserialize(result.getString("item"))[0];
-            final String categoryID = result.getString("category");
+            final String temp = result.getString("category");
+            final String category;
+            final String currency;
+            if (temp.contains("~")) {
+                final String[] split = temp.split("~");
+                category = split[0];
+                currency = split[1];
+            } else {
+                category = temp;
+                currency = "vault";
+            }
             final double price = result.getDouble("price");
             final double tax = result.getDouble("tax");
             final long creationDate = result.getLong("time");
             final long deletionDate = creationDate + TimeUnit.DAYS.toMillis(2);
             final boolean biddable = result.getBoolean("biddable");
-            list.add(new CurrentListing(id, ownerId, ownerName, itemStack, categoryID, price, tax, creationDate, deletionDate, biddable, List.of()));
+            list.add(new CurrentListing(id, ownerId, ownerName, itemStack, category, currency, price, tax, creationDate, deletionDate, biddable, List.of()));
         }
         return list;
     }
@@ -98,7 +118,7 @@ public class ListingHikariDao extends SqlDao<Listing> {
         stmt.setString(2, listing.getOwner().toString());
         stmt.setString(3, listing.getOwnerName());
         stmt.setString(4, ItemSerializer.serialize(listing.getItemStack()));
-        stmt.setString(5, listing.getCategoryID());
+        stmt.setString(5, listing.getCategoryID() + "~" + listing.getCurrencyId());
         stmt.setDouble(6, listing.getPrice());
         stmt.setDouble(7, listing.getTax());
         stmt.setLong(8, listing.getCreationDate());
