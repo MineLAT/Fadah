@@ -142,10 +142,10 @@ public final class Fadah extends JavaPlugin {
                     CollectableItem collectableItem = new CollectableItem(listing.getId(), listing.getOwner(), listing.getItemStack(), Instant.now().toEpochMilli());
                     ExpiredItems items = ExpiredItems.of(listing.getOwner());
                     items.collectableItems().add(collectableItem);
+                    ExpiredListingsCache.addItem(listing.getOwner(), collectableItem);
                     DatabaseManager.getInstance().save(ExpiredItems.class, items);
-                    if (!Config.i().getBroker().isEnabled()) {
-                        ExpiredListingsCache.addItem(listing.getOwner(), collectableItem);
-                    } else {
+
+                    if (Config.i().getBroker().isEnabled()) {
                         Message.builder()
                                 .type(Message.Type.EXPIRED_LISTINGS_UPDATE)
                                 .payload(Payload.withUUID(listing.getOwner()))
@@ -259,9 +259,11 @@ public final class Fadah extends JavaPlugin {
     private void loadCurrencies() {
         getConsole().info("Loading currencies...");
         Stream.of(
-                new VaultCurrency(),
-                new RedisEconomyCurrency()
+                new VaultCurrency()
         ).forEach(CurrencyRegistry::register);
+        Stream.of(
+                new RedisEconomyCurrency()
+        ).forEach(CurrencyRegistry::registerMulti);
         getConsole().info("Currencies Loaded!");
     }
 
