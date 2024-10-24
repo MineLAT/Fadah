@@ -4,8 +4,10 @@ import com.github.puregero.multilib.MultiLib;
 import info.preva1l.fadah.Fadah;
 import info.preva1l.fadah.cache.CollectionBoxCache;
 import info.preva1l.fadah.cache.HistoricItemsCache;
+import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
 import info.preva1l.fadah.data.DatabaseManager;
+import info.preva1l.fadah.data.DatabaseType;
 import info.preva1l.fadah.records.CollectableItem;
 import info.preva1l.fadah.records.CollectionBox;
 import info.preva1l.fadah.records.HistoricItem;
@@ -80,7 +82,11 @@ public class CollectionBoxMenu extends PaginatedFastInv {
                         return;
                     }
                     CollectionBoxCache.removeItem(owner.getUniqueId(), collectableItem);
-                    DatabaseManager.getInstance().save(CollectionBox.class, new CollectionBox(owner.getUniqueId(), collectionBox));
+                    if (Config.i().getDatabase().getType() == DatabaseType.MONGO) {
+                        DatabaseManager.getInstance().save(CollectionBox.class, new CollectionBox(owner.getUniqueId(), new ArrayList<>(collectionBox.values())));
+                    } else {
+                        DatabaseManager.getInstance().deleteSpecific(CollectionBox.class, new CollectionBox(owner.getUniqueId(), new ArrayList<>(collectionBox.values())), collectableItem);
+                    }
                     viewer.getInventory().setItem(slot, collectableItem.itemStack());
 
                     updatePagination();

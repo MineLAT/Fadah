@@ -4,8 +4,10 @@ import com.github.puregero.multilib.MultiLib;
 import info.preva1l.fadah.Fadah;
 import info.preva1l.fadah.cache.ExpiredListingsCache;
 import info.preva1l.fadah.cache.HistoricItemsCache;
+import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
 import info.preva1l.fadah.data.DatabaseManager;
+import info.preva1l.fadah.data.DatabaseType;
 import info.preva1l.fadah.records.CollectableItem;
 import info.preva1l.fadah.records.ExpiredItems;
 import info.preva1l.fadah.records.HistoricItem;
@@ -81,7 +83,11 @@ public class ExpiredListingsMenu extends PaginatedFastInv {
                         return;
                     }
                     ExpiredListingsCache.removeItem(owner.getUniqueId(), collectableItem);
-                    DatabaseManager.getInstance().save(ExpiredItems.class, ExpiredItems.of(owner.getUniqueId()));
+                    if (Config.i().getDatabase().getType() == DatabaseType.MONGO) {
+                        DatabaseManager.getInstance().save(ExpiredItems.class, ExpiredItems.of(owner.getUniqueId()));
+                    } else {
+                        DatabaseManager.getInstance().deleteSpecific(ExpiredItems.class, ExpiredItems.of(owner.getUniqueId()), collectableItem);
+                    }
                     viewer.getInventory().setItem(slot, collectableItem.itemStack());
 
                     updatePagination();
