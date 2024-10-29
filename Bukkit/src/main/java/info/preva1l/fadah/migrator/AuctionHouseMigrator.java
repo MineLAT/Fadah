@@ -59,9 +59,10 @@ public final class AuctionHouseMigrator implements Migrator {
         Map<UUID, List<CollectableItem>> allItems = new ConcurrentHashMap<>();
         for (long added : listingMap.keySet()) {
             com.spawnchunk.auctionhouse.modules.Listing listing = listingMap.get(added);
+            UUID id = UUID.randomUUID();
             UUID owner = UUID.fromString(listing.getSeller_UUID());
             ItemStack itemStack = listing.getItem();
-            CollectableItem item = new CollectableItem(itemStack, Instant.now().toEpochMilli());
+            CollectableItem item = new CollectableItem(id, owner, itemStack, Instant.now().toEpochMilli());
             allItems.compute(owner, (uuid, items) -> {
                 if (items == null) {
                     items = new ArrayList<>();

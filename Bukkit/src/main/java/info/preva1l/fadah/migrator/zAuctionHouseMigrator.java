@@ -54,7 +54,8 @@ public final class zAuctionHouseMigrator implements Migrator {
             if (categoryId == null) {
                 categoryId = CategoryCache.getCategories().get(0).id();
             }
-            String currency = item.getEconomy().getCurrency();
+            //String currency = item.getEconomy().getCurrency();
+            String currency = "vault";
             if (CurrencyRegistry.get(currency) == null) currency = "vault";
             listings.add(new CurrentListing(id, owner, ownerName, itemStack, categoryId, currency, price, 0,
                     Instant.now().toEpochMilli(), expiry, false, List.of()));
@@ -72,9 +73,10 @@ public final class zAuctionHouseMigrator implements Migrator {
     public Map<UUID, List<CollectableItem>> migrateExpiredListings() {
         Map<UUID, List<CollectableItem>> allItems = new ConcurrentHashMap<>();
         for (AuctionItem item : auctionManager.getStorage().getItems(PLUGIN.get(), StorageType.EXPIRE)) {
+            UUID id = item.getUniqueId();
             UUID owner = item.getSellerUniqueId();
             ItemStack itemStack = item.getItemStack();
-            CollectableItem collectableItem = new CollectableItem(itemStack, item.getExpireAt());
+            CollectableItem collectableItem = new CollectableItem(id, owner, itemStack, item.getExpireAt());
             allItems.compute(owner, (uuid, items) -> {
                 if (items == null) {
                     items = new ArrayList<>();
