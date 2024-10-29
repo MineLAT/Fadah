@@ -317,7 +317,17 @@ public class HikariHandler implements DatabaseHandler {
 
     @NotNull
     private static Set<String> getTables(@NotNull Connection con) throws SQLException {
-        final Set<String> tables = new HashSet<>();
+        final Set<String> tables = new HashSet<>() {
+            @Override
+            public boolean add(String s) {
+                return super.add(s.toLowerCase());
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                return super.contains(o instanceof String s ? s.toLowerCase() : o);
+            }
+        };
         try (ResultSet set = con.getMetaData().getTables(con.getCatalog(), null, "%", null)) {
             while (set.next()) {
                 tables.add(set.getString(3));
