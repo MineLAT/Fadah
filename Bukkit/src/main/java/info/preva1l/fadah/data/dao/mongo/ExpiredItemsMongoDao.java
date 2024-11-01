@@ -13,7 +13,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.bson.Document;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,7 +31,7 @@ public class ExpiredItemsMongoDao implements Dao<ExpiredItems> {
     @Override
     public Optional<ExpiredItems> get(UUID id) {
         try {
-            List<CollectableItem> list = new ArrayList<>();
+            LinkedHashSet<CollectableItem> list = new LinkedHashSet<>();
             MongoCollection<Document> collection = collectionHelper.getCollection("expired_items");
             final FindIterable<Document> documents = collection.find().filter(Filters.eq("playerUUID", id));
             for (Document document : documents) {

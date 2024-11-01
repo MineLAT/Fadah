@@ -71,4 +71,17 @@ public abstract class Listing {
     public abstract void purchase(@NotNull Player buyer);
 
     public abstract boolean cancel(@NotNull Player canceller);
+
+    @Override
+    public final boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof Listing listing)) return false;
+
+        return getId().equals(listing.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getId().hashCode();
+    }
 }

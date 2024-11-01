@@ -39,10 +39,15 @@ public class CollectableItem {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o instanceof  CollectableItem collectableItem) {
-            return collectableItem.dateAdded == this.dateAdded() && collectableItem.itemStack.equals(this.itemStack);
-        }
-        return false;
+    public final boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof CollectableItem that)) return false;
+
+        return id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 }

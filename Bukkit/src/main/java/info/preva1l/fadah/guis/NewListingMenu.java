@@ -27,7 +27,6 @@ import info.preva1l.fadah.utils.logging.TransactionLogger;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -215,7 +214,7 @@ public class NewListingMenu extends FastInv {
         );
     }
 
-    private void startListing(Instant deletionDate, double price) {
+    private synchronized void startListing(Instant deletionDate, double price) {
         String category = CategoryCache.getCategoryForItem(itemToSell);
 
         if (category == null || Restrictions.isRestrictedItem(itemToSell)) {
@@ -237,8 +236,7 @@ public class NewListingMenu extends FastInv {
             return;
         }
 
-        ListingCache.addListing(listing);
-        DatabaseManager.getInstance().save(Listing.class, listing);
+        DatabaseManager.getInstance().save(Listing.class, listing).thenRun(ListingCache::update);
 
         if (Config.i().getBroker().isEnabled()) {
             Message.builder()

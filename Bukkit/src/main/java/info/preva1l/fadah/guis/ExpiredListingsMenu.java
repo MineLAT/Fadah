@@ -1,34 +1,24 @@
 package info.preva1l.fadah.guis;
 
-import com.github.puregero.multilib.MultiLib;
-import info.preva1l.fadah.Fadah;
-import info.preva1l.fadah.cache.ExpiredListingsCache;
-import info.preva1l.fadah.cache.HistoricItemsCache;
-import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
 import info.preva1l.fadah.data.DatabaseManager;
-import info.preva1l.fadah.data.DatabaseType;
 import info.preva1l.fadah.records.CollectableItem;
 import info.preva1l.fadah.records.ExpiredItems;
-import info.preva1l.fadah.records.HistoricItem;
-import info.preva1l.fadah.records.History;
 import info.preva1l.fadah.utils.StringUtils;
 import info.preva1l.fadah.utils.TimeUtil;
 import info.preva1l.fadah.utils.guis.*;
+import lombok.Getter;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 public class ExpiredListingsMenu extends PaginatedFastInv {
     private final Player viewer;
+    @Getter
     private final OfflinePlayer owner;
-    private final Map<UUID, CollectableItem> expiredItems;
+    private final LinkedHashSet<CollectableItem> expiredItems;
 
     public ExpiredListingsMenu(Player viewer, OfflinePlayer owner, int page) {
         super(LayoutManager.MenuType.EXPIRED_LISTINGS.getLayout().guiSize(),
@@ -39,10 +29,7 @@ public class ExpiredListingsMenu extends PaginatedFastInv {
         this.viewer = viewer;
         this.owner = owner;
         this.page = page;
-        this.expiredItems = new HashMap<>();
-        for (CollectableItem item : ExpiredListingsCache.getExpiredListings(owner.getUniqueId())) {
-            this.expiredItems.put(item.id(), item);
-        }
+        this.expiredItems = ExpiredItems.of(owner.getUniqueId()).join().collectableItems();
 
         List<Integer> fillerSlots = getLayout().fillerSlots();
         if (!fillerSlots.isEmpty()) {
@@ -58,48 +45,33 @@ public class ExpiredListingsMenu extends PaginatedFastInv {
     }
 
     @Override
-    protected synchronized void fillPaginationItems() {
-        for (UUID id : new HashSet<>(expiredItems.keySet())) {
-            final CollectableItem collectableItem = expiredItems.get(id);
-            if (collectableItem == null) continue;
+    protected void onUpdate() {
+        this.expiredItems.clear();
+        this.expiredItems.addAll(ExpiredItems.of(owner.getUniqueId()).join().collectableItems());
+    }
 
+    @Override
+    protected synchronized void fillPaginationItems() {
+        for (CollectableItem collectableItem : expiredItems) {
             ItemBuilder itemStack = new ItemBuilder(collectableItem.itemStack().clone())
                     .addLore(getLang().getLore("lore", TimeUtil.formatTimeSince(collectableItem.dateAdded())));
 
             addPaginationItem(new PaginatedItem(itemStack.build(), e -> {
-                MultiLib.getEntityScheduler(viewer).execute(Fadah.getINSTANCE(), () -> {
-                    int slot = viewer.getInventory().firstEmpty();
-                    if (slot == -1) {
+                int slot = viewer.getInventory().firstEmpty();
+                if (slot == -1) {
 
-                        Lang.sendMessage(viewer, Lang.i().getPrefix() + Lang.i().getErrors().getInventoryFull());
-                        return;
-                    }
-                    if (!expiredItems.containsKey(id)) {
-                        return;
-                    }
-                    expiredItems.remove(id);
-                    if (!ExpiredListingsCache.doesItemExist(player.getUniqueId(), collectableItem)) {
-                        Lang.sendMessage(viewer, StringUtils.colorize(Lang.i().getPrefix() + Lang.i().getErrors().getDoesNotExist()));
-                        return;
-                    }
-                    ExpiredListingsCache.removeItem(owner.getUniqueId(), collectableItem);
-                    if (Config.i().getDatabase().getType() == DatabaseType.MONGO) {
-                        DatabaseManager.getInstance().save(ExpiredItems.class, ExpiredItems.of(owner.getUniqueId()));
-                    } else {
-                        DatabaseManager.getInstance().deleteSpecific(ExpiredItems.class, ExpiredItems.of(owner.getUniqueId()), collectableItem);
-                    }
+                    Lang.sendMessage(viewer, Lang.i().getPrefix() + Lang.i().getErrors().getInventoryFull());
+                    return;
+                }
+                if (!expiredItems.remove(collectableItem)) {
+                    Lang.sendMessage(viewer, StringUtils.colorize(Lang.i().getPrefix() + Lang.i().getErrors().getDoesNotExist()));
+                    return;
+                }
+                DatabaseManager.getInstance().deleteSpecific(ExpiredItems.class, new ExpiredItems(owner.getUniqueId(), expiredItems), collectableItem).thenRun(() -> {
                     viewer.getInventory().setItem(slot, collectableItem.itemStack());
 
                     updatePagination();
-
-                    // In game logs
-                    boolean isAdmin = viewer.getUniqueId() != owner.getUniqueId();
-                    HistoricItem historicItem = new HistoricItem(collectableItem.id(), owner.getUniqueId(), Instant.now().toEpochMilli(),
-                            isAdmin ? HistoricItem.LoggedAction.EXPIRED_ITEM_ADMIN_CLAIM : HistoricItem.LoggedAction.EXPIRED_ITEM_CLAIM,
-                            collectableItem.itemStack(), null, null);
-                    HistoricItemsCache.addLog(owner.getUniqueId(), historicItem);
-                    DatabaseManager.getInstance().save(History.class, History.of(owner.getUniqueId()));
-                },null, 0L);
+                });
             }));
         }
     }
@@ -119,15 +91,6 @@ public class ExpiredListingsMenu extends PaginatedFastInv {
             setItem(getLayout().buttonSlots().getOrDefault(LayoutManager.ButtonType.PAGINATION_CONTROL_TWO,-1),
                     GuiHelper.constructButton(GuiButtonType.NEXT_PAGE), e -> nextPage());
         }
-    }
-
-    @Override
-    protected void updatePagination() {
-        this.expiredItems.clear();
-        for (CollectableItem item : ExpiredListingsCache.getExpiredListings(player.getUniqueId())) {
-            this.expiredItems.put(item.id(), item);
-        }
-        super.updatePagination();
     }
 
     private void addNavigationButtons() {

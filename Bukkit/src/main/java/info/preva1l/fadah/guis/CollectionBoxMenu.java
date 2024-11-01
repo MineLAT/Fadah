@@ -1,35 +1,24 @@
 package info.preva1l.fadah.guis;
 
-import com.github.puregero.multilib.MultiLib;
-import info.preva1l.fadah.Fadah;
-import info.preva1l.fadah.cache.CollectionBoxCache;
-import info.preva1l.fadah.cache.HistoricItemsCache;
-import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
 import info.preva1l.fadah.data.DatabaseManager;
-import info.preva1l.fadah.data.DatabaseType;
 import info.preva1l.fadah.records.CollectableItem;
 import info.preva1l.fadah.records.CollectionBox;
-import info.preva1l.fadah.records.HistoricItem;
-import info.preva1l.fadah.records.History;
 import info.preva1l.fadah.utils.StringUtils;
 import info.preva1l.fadah.utils.TimeUtil;
 import info.preva1l.fadah.utils.guis.*;
+import lombok.Getter;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 public class CollectionBoxMenu extends PaginatedFastInv {
     private final Player viewer;
+    @Getter
     private final OfflinePlayer owner;
-    private final Map<UUID, CollectableItem> collectionBox;
+    private final LinkedHashSet<CollectableItem> collectionBox;
 
     public CollectionBoxMenu(Player viewer, OfflinePlayer owner) {
         super(LayoutManager.MenuType.COLLECTION_BOX.getLayout().guiSize(),
@@ -39,10 +28,7 @@ public class CollectionBoxMenu extends PaginatedFastInv {
                 List.of(10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34));
         this.viewer = viewer;
         this.owner = owner;
-        this.collectionBox = new HashMap<>();
-        for (CollectableItem item : CollectionBoxCache.getCollectionBox(owner.getUniqueId())) {
-            this.collectionBox.put(item.id(), item);
-        }
+        this.collectionBox = CollectionBox.of(owner.getUniqueId()).join().collectableItems();
 
         List<Integer> fillerSlots = getLayout().fillerSlots();
         if (!fillerSlots.isEmpty()) {
@@ -58,48 +44,32 @@ public class CollectionBoxMenu extends PaginatedFastInv {
     }
 
     @Override
-    protected synchronized void fillPaginationItems() {
-        for (UUID id : new HashSet<>(collectionBox.keySet())) {
-            final CollectableItem collectableItem = collectionBox.get(id);
-            if (collectableItem == null) continue;
+    protected void onUpdate() {
+        this.collectionBox.clear();
+        this.collectionBox.addAll(CollectionBox.of(owner.getUniqueId()).join().collectableItems());
+    }
 
+    @Override
+    protected synchronized void fillPaginationItems() {
+        for (CollectableItem collectableItem : collectionBox) {
             ItemBuilder itemBuilder = new ItemBuilder(collectableItem.itemStack().clone())
                     .lore(getLang().getLore("lore", TimeUtil.formatTimeSince(collectableItem.dateAdded())));
 
             addPaginationItem(new PaginatedItem(itemBuilder.build(), e -> {
-                MultiLib.getEntityScheduler(viewer).execute(Fadah.getINSTANCE(), () -> {
-                    int slot = viewer.getInventory().firstEmpty();
-                    if (slot == -1) {
-                        Lang.sendMessage(viewer, Lang.i().getPrefix() + Lang.i().getErrors().getInventoryFull());
-                        return;
-                    }
-                    if (!collectionBox.containsKey(id)) {
-                        return;
-                    }
-                    collectionBox.remove(id);
-                    if (!CollectionBoxCache.doesItemExist(player.getUniqueId(), collectableItem)) {
-                        Lang.sendMessage(viewer, Lang.i().getPrefix() + Lang.i().getErrors().getDoesNotExist());
-                        return;
-                    }
-                    CollectionBoxCache.removeItem(owner.getUniqueId(), collectableItem);
-                    if (Config.i().getDatabase().getType() == DatabaseType.MONGO) {
-                        DatabaseManager.getInstance().save(CollectionBox.class, new CollectionBox(owner.getUniqueId(), new ArrayList<>(collectionBox.values())));
-                    } else {
-                        DatabaseManager.getInstance().deleteSpecific(CollectionBox.class, new CollectionBox(owner.getUniqueId(), new ArrayList<>(collectionBox.values())), collectableItem);
-                    }
+                int slot = viewer.getInventory().firstEmpty();
+                if (slot == -1) {
+                    Lang.sendMessage(viewer, Lang.i().getPrefix() + Lang.i().getErrors().getInventoryFull());
+                    return;
+                }
+                if (!collectionBox.remove(collectableItem)) {
+                    Lang.sendMessage(viewer, Lang.i().getPrefix() + Lang.i().getErrors().getDoesNotExist());
+                    return;
+                }
+                DatabaseManager.getInstance().deleteSpecific(CollectionBox.class, new CollectionBox(owner.getUniqueId(), collectionBox), collectableItem).thenRun(() -> {
                     viewer.getInventory().setItem(slot, collectableItem.itemStack());
 
                     updatePagination();
-
-                    // In game logs
-                    boolean isAdmin = viewer.getUniqueId() != owner.getUniqueId();
-                    HistoricItem historicItem = new HistoricItem(collectableItem.id(), owner.getUniqueId(), Instant.now().toEpochMilli(),
-                            isAdmin ? HistoricItem.LoggedAction.COLLECTION_BOX_ADMIN_CLAIM
-                                    : HistoricItem.LoggedAction.COLLECTION_BOX_CLAIM,
-                            collectableItem.itemStack(), null, null);
-                    HistoricItemsCache.addLog(owner.getUniqueId(), historicItem);
-                    DatabaseManager.getInstance().save(History.class, History.of(owner.getUniqueId()));
-                }, null, 0L);
+                });
             }));
         }
     }
@@ -119,15 +89,6 @@ public class CollectionBoxMenu extends PaginatedFastInv {
             setItem(getLayout().buttonSlots().getOrDefault(LayoutManager.ButtonType.PAGINATION_CONTROL_TWO,-1),
                     GuiHelper.constructButton(GuiButtonType.NEXT_PAGE), e -> nextPage());
         }
-    }
-
-    @Override
-    protected void updatePagination() {
-        this.collectionBox.clear();
-        for (CollectableItem item : CollectionBoxCache.getCollectionBox(player.getUniqueId())) {
-            this.collectionBox.put(item.id(), item);
-        }
-        super.updatePagination();
     }
 
     private void addNavigationButtons() {

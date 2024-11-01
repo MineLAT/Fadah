@@ -43,7 +43,7 @@ public class Config {
     private boolean logToFile = true;
 
     @Comment("Enable this if you are having de-sync issues with multi-server.")
-    private boolean strictChecks = false;
+    private boolean strictChecks = true;
 
     private ListingPrice listingPrice = new ListingPrice();
 

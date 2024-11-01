@@ -1,7 +1,6 @@
 package info.preva1l.fadah.commands.subcommands;
 
 import info.preva1l.fadah.Fadah;
-import info.preva1l.fadah.cache.HistoricItemsCache;
 import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
 import info.preva1l.fadah.guis.ProfileMenu;
@@ -29,7 +28,7 @@ public class ProfileSubCommand extends SubCommand {
             owner = Bukkit.getOfflinePlayer(command.args()[0]);
             Fadah.getINSTANCE().loadPlayerData(owner.getUniqueId()).join(); // command runs async
         }
-        if (owner.getUniqueId() != command.getPlayer().getUniqueId() && !HistoricItemsCache.playerExists(owner.getUniqueId())) {
+        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
             command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
                     .replace("%player%", command.args()[0]));
             return;

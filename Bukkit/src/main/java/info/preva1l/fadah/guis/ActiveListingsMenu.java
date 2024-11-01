@@ -8,6 +8,7 @@ import info.preva1l.fadah.records.Listing;
 import info.preva1l.fadah.utils.StringUtils;
 import info.preva1l.fadah.utils.TimeUtil;
 import info.preva1l.fadah.utils.guis.*;
+import lombok.Getter;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -17,6 +18,7 @@ import java.util.List;
 
 public class ActiveListingsMenu extends PaginatedFastInv {
     private final Player viewer;
+    @Getter
     private final OfflinePlayer owner;
     private final List<Listing> listings;
 

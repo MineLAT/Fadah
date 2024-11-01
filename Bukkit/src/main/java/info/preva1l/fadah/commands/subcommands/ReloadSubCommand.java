@@ -1,6 +1,7 @@
 package info.preva1l.fadah.commands.subcommands;
 
 import info.preva1l.fadah.Fadah;
+import info.preva1l.fadah.cache.ListingCache;
 import info.preva1l.fadah.config.Lang;
 import info.preva1l.fadah.multiserver.Message;
 import info.preva1l.fadah.utils.commands.SubCommand;
@@ -15,6 +16,10 @@ public class ReloadSubCommand extends SubCommand {
 
     @SubCommandArgs(name = "reload", permission = "fadah.reload", inGameOnly = false)
     public void execute(@NotNull SubCommandArguments command) {
+        if (command.args().length > 0 && command.args()[0].equalsIgnoreCase("cache")) {
+            ListingCache.update();
+            return;
+        }
         if (Fadah.getINSTANCE().getBroker() != null) {
             Message.builder().type(Message.Type.RELOAD).build().send(Fadah.getINSTANCE().getBroker());
             return;

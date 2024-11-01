@@ -1,10 +1,7 @@
 package info.preva1l.fadah.utils.guis;
 
-import info.preva1l.fadah.Fadah;
 import info.preva1l.fadah.config.Menus;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -27,18 +24,18 @@ public abstract class PaginatedFastInv extends FastInv {
                 21, 22, 23, 24, 25, 29, 30,
                 31, 32, 33, 34, 38, 39, 40,
                 41, 42, 43);
-
-        BukkitTask task = Bukkit.getServer().getScheduler().runTaskTimerAsynchronously(Fadah.getINSTANCE(), this::updatePagination, 20L, 20L);
-        InventoryEventHandler.tasksToQuit.put(getInventory(), task);
     }
 
     protected PaginatedFastInv(int size, @NotNull String title, @NotNull Player player, LayoutManager.MenuType menuType, @NotNull List<Integer> paginationMappings) {
         super(size, title, menuType);
         this.player = player;
         this.paginationMappings = paginationMappings;
+    }
 
-        BukkitTask task = Bukkit.getServer().getScheduler().runTaskTimerAsynchronously(Fadah.getINSTANCE(), this::updatePagination, 20L, 20L);
-        InventoryEventHandler.tasksToQuit.put(getInventory(), task);
+    @Override
+    void handleUpdate() {
+        super.handleUpdate();
+        updatePagination();
     }
 
     protected void setPaginationMappings(List<Integer> list) {
@@ -80,7 +77,10 @@ public abstract class PaginatedFastInv extends FastInv {
         for (int i = 0; i < maxItemsPerPage; i++) {
             removeItem(paginationMappings.get(i));
             index = maxItemsPerPage * page + i;
-            if (index >= paginatedItems.size()) continue;
+            if (index >= paginatedItems.size()) {
+                removeItem(paginationMappings.get(i));
+                continue;
+            }
             PaginatedItem item = paginatedItems.get(index);
             setItem(paginationMappings.get(i), item.itemStack(), item.eventConsumer());
         }

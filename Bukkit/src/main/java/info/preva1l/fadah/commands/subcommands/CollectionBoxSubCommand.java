@@ -1,13 +1,9 @@
 package info.preva1l.fadah.commands.subcommands;
 
 import info.preva1l.fadah.Fadah;
-import info.preva1l.fadah.cache.CollectionBoxCache;
-import info.preva1l.fadah.cache.HistoricItemsCache;
 import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
-import info.preva1l.fadah.data.DatabaseManager;
 import info.preva1l.fadah.guis.CollectionBoxMenu;
-import info.preva1l.fadah.records.CollectionBox;
 import info.preva1l.fadah.utils.commands.SubCommand;
 import info.preva1l.fadah.utils.commands.SubCommandArgs;
 import info.preva1l.fadah.utils.commands.SubCommandArguments;
@@ -30,11 +26,8 @@ public class CollectionBoxSubCommand extends SubCommand {
         OfflinePlayer owner = command.getPlayer();
         if (command.args().length >= 1 && command.sender().hasPermission("fadah.manage.collection-box")) {
             owner = Bukkit.getOfflinePlayer(command.args()[0]);
-            final OfflinePlayer finalOwner = owner;
-            DatabaseManager.getInstance().get(CollectionBox.class, finalOwner.getUniqueId())
-                    .thenAccept(var1 -> var1.ifPresent(list -> CollectionBoxCache.update(finalOwner.getUniqueId(), list.collectableItems())));
         }
-        if (owner.getUniqueId() != command.getPlayer().getUniqueId() && !HistoricItemsCache.playerExists(owner.getUniqueId())) {
+        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
             command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
                     .replace("%player%", command.args()[0]));
             return;

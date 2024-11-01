@@ -3,6 +3,7 @@ package info.preva1l.fadah.utils.guis;
 import com.github.puregero.multilib.MultiLib;
 import info.preva1l.fadah.Fadah;
 import info.preva1l.fadah.utils.config.LanguageConfig;
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -29,6 +30,8 @@ import java.util.stream.IntStream;
 @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
 public class FastInv implements InventoryHolder {
 
+    private static final Map<UUID, FastInv> INVENTORIES = new HashMap<>();
+
     private final Map<Integer, Consumer<InventoryClickEvent>> itemHandlers = new HashMap<>();
     private final List<Consumer<InventoryOpenEvent>> openHandlers = new ArrayList<>();
     private final List<Consumer<InventoryCloseEvent>> closeHandlers = new ArrayList<>();
@@ -38,6 +41,9 @@ public class FastInv implements InventoryHolder {
     private final LayoutManager.MenuType menuType;
 
     private Predicate<Player> closeFilter;
+
+    @Getter
+    private transient boolean open;
 
     /**
      * Create a new FastInv with a custom size.
@@ -69,6 +75,9 @@ public class FastInv implements InventoryHolder {
 
         this.inventory = inv;
         this.menuType = menuType;
+    }
+
+    protected void onUpdate() {
     }
 
     protected void onOpen(InventoryOpenEvent event) {
@@ -170,10 +179,31 @@ public class FastInv implements InventoryHolder {
      * @param player The player to open the menu.
      */
     public void open(Player player) {
-        MultiLib.getEntityScheduler(player).execute(Fadah.getINSTANCE(),
-                () -> player.openInventory(this.inventory),
-                null,
-                0L);
+        MultiLib.getEntityScheduler(player).execute(Fadah.getINSTANCE(), () -> {
+            player.openInventory(this.inventory);
+            INVENTORIES.put(player.getUniqueId(), this);
+        }, null, 0L);
+    }
+
+    public static <T extends FastInv> void update(@NotNull Class<T> type) {
+        update(type, any -> true);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends FastInv> void update(@NotNull Class<T> type, @NotNull Predicate<T> condition) {
+        INVENTORIES.entrySet().removeIf(entry -> {
+            if (!entry.getValue().isOpen()) {
+                return true;
+            }
+            if (type.isInstance(entry.getValue()) && condition.test((T) entry.getValue())) {
+                final Player player = Bukkit.getPlayer(entry.getKey());
+                if (player == null) {
+                    return true;
+                }
+                Bukkit.getServer().getScheduler().runTaskAsynchronously(Fadah.getINSTANCE(), () -> entry.getValue().handleUpdate());
+            }
+            return false;
+        });
     }
 
     /**
@@ -197,21 +227,27 @@ public class FastInv implements InventoryHolder {
         return this.inventory;
     }
 
+    void handleUpdate() {
+        onUpdate();
+    }
+
     void handleOpen(InventoryOpenEvent e) {
         onOpen(e);
 
         this.openHandlers.forEach(c -> c.accept(e));
+        this.open = true;
     }
 
     boolean handleClose(InventoryCloseEvent e) {
         onClose(e);
 
+        this.open = false;
         this.closeHandlers.forEach(c -> c.accept(e));
 
         return this.closeFilter != null && this.closeFilter.test((Player) e.getPlayer());
     }
 
-    void handleClick(InventoryClickEvent e) {
+    synchronized void handleClick(InventoryClickEvent e) {
         onClick(e);
 
         this.clickHandlers.forEach(c -> c.accept(e));

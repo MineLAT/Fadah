@@ -1,12 +1,13 @@
 package info.preva1l.fadah.guis;
 
-import info.preva1l.fadah.cache.HistoricItemsCache;
 import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
 import info.preva1l.fadah.records.HistoricItem;
+import info.preva1l.fadah.records.History;
 import info.preva1l.fadah.utils.StringUtils;
 import info.preva1l.fadah.utils.TimeUtil;
 import info.preva1l.fadah.utils.guis.*;
+import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -18,7 +19,9 @@ import java.util.List;
 
 public class HistoryMenu extends PaginatedFastInv {
     private final Player viewer;
+    @Getter
     private final OfflinePlayer owner;
+    private final String dateSearch;
     private final List<HistoricItem> historicItems;
 
     public HistoryMenu(Player viewer, OfflinePlayer owner, @Nullable String dateSearch) {
@@ -30,10 +33,11 @@ public class HistoryMenu extends PaginatedFastInv {
                 List.of(10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34));
         this.viewer = viewer;
         this.owner = owner;
-        this.historicItems = HistoricItemsCache.getHistory(owner.getUniqueId());
+        this.dateSearch = dateSearch;
+        this.historicItems = History.of(owner.getUniqueId()).join().collectableItems();
 
-        if (dateSearch != null) {
-            this.historicItems.removeIf(historicItem -> !TimeUtil.formatTimeToVisualDate(historicItem.getLoggedDate()).contains(dateSearch));
+        if (this.dateSearch != null) {
+            this.historicItems.removeIf(historicItem -> !TimeUtil.formatTimeToVisualDate(historicItem.getLoggedDate()).contains(this.dateSearch));
         }
 
         List<Integer> fillerSlots = getLayout().fillerSlots();
@@ -98,6 +102,17 @@ public class HistoryMenu extends PaginatedFastInv {
             setItem(getLayout().buttonSlots().getOrDefault(LayoutManager.ButtonType.PAGINATION_CONTROL_TWO,-1),
                     GuiHelper.constructButton(GuiButtonType.NEXT_PAGE), e -> nextPage());
         }
+    }
+
+    @Override
+    protected void updatePagination() {
+        this.historicItems.clear();
+        this.historicItems.addAll(History.of(owner.getUniqueId()).join().collectableItems());
+
+        if (this.dateSearch != null) {
+            this.historicItems.removeIf(historicItem -> !TimeUtil.formatTimeToVisualDate(historicItem.getLoggedDate()).contains(this.dateSearch));
+        }
+        super.updatePagination();
     }
 
     private void addNavigationButtons() {

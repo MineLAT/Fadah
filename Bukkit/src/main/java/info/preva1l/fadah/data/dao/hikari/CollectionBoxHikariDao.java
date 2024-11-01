@@ -1,6 +1,5 @@
 package info.preva1l.fadah.data.dao.hikari;
 
-import com.google.common.collect.Lists;
 import info.preva1l.fadah.data.DatabaseType;
 import info.preva1l.fadah.data.dao.SqlDao;
 import info.preva1l.fadah.data.handler.HikariHandler;
@@ -17,7 +16,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.UUID;
 
 public class CollectionBoxHikariDao extends SqlDao<CollectionBox> {
@@ -58,7 +57,7 @@ public class CollectionBoxHikariDao extends SqlDao<CollectionBox> {
 
     @Override
     protected @Nullable CollectionBox select(UUID buyer, Connection con, PreparedStatement stmt) throws SQLException {
-        final List<CollectableItem> retrievedData = Lists.newArrayList();
+        final LinkedHashSet<CollectableItem> retrievedData = new LinkedHashSet<>();
 
         stmt.setString(1, buyer.toString());
         stmt.setBoolean(2, false);

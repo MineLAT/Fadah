@@ -1,14 +1,15 @@
 package info.preva1l.fadah.data;
 
 import info.preva1l.fadah.Fadah;
-import info.preva1l.fadah.cache.ListingCache;
 import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.data.handler.DatabaseHandler;
 import info.preva1l.fadah.data.handler.HikariHandler;
 import info.preva1l.fadah.data.handler.MongoHandler;
+import info.preva1l.fadah.utils.TaskManager;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * This is the manager for all database interactions.
@@ -20,6 +21,7 @@ public final class DatabaseManager {
 
     private final Map<DatabaseType, Class<? extends DatabaseHandler>> databaseHandlers = new HashMap<>();
     private final DatabaseHandler handler;
+    private final Executor executor;
 
     private DatabaseManager() {
         Fadah.getConsole().info("Connecting to Database and populating caches...");
@@ -32,6 +34,7 @@ public final class DatabaseManager {
 
         this.handler = initHandler();
         Fadah.getConsole().info("Connected to Database and populated caches!");
+        this.executor = runnable -> TaskManager.Async.run(Fadah.getINSTANCE(), runnable);
     }
 
     public <T> CompletableFuture<List<T>> getAll(Class<T> clazz) {
@@ -39,7 +42,7 @@ public final class DatabaseManager {
             Fadah.getConsole().severe("Tried to perform database action when the database is not connected!");
             return CompletableFuture.completedFuture(List.of());
         }
-        return CompletableFuture.supplyAsync(() -> handler.getAll(clazz));
+        return CompletableFuture.supplyAsync(() -> handler.getAll(clazz), executor);
     }
 
     public <T> CompletableFuture<Optional<T>> get(Class<T> clazz, UUID id) {
@@ -47,7 +50,7 @@ public final class DatabaseManager {
             Fadah.getConsole().severe("Tried to perform database action when the database is not connected!");
             return CompletableFuture.completedFuture(Optional.empty());
         }
-        return CompletableFuture.supplyAsync(() -> handler.get(clazz, id));
+        return CompletableFuture.supplyAsync(() -> handler.get(clazz, id), executor);
     }
 
     public <T> CompletableFuture<Void> save(Class<T> clazz, T t) {
@@ -58,7 +61,7 @@ public final class DatabaseManager {
         return CompletableFuture.supplyAsync(() -> {
             handler.save(clazz, t);
             return null;
-        });
+        }, executor);
     }
 
     public <T> CompletableFuture<Void> delete(Class<T> clazz, T t) {
@@ -69,7 +72,7 @@ public final class DatabaseManager {
         return CompletableFuture.supplyAsync(() -> {
             handler.delete(clazz, t);
             return null;
-        });
+        }, executor);
     }
 
     public <T> CompletableFuture<Void> update(Class<T> clazz, T t, String[] params) {
@@ -80,7 +83,7 @@ public final class DatabaseManager {
         return CompletableFuture.supplyAsync(() -> {
             handler.update(clazz, t, params);
             return null;
-        });
+        }, executor);
     }
 
     public <T> CompletableFuture<Void> deleteSpecific(Class<T> clazz, T t, Object o) {
@@ -91,7 +94,7 @@ public final class DatabaseManager {
         return CompletableFuture.supplyAsync(() -> {
             handler.deleteSpecific(clazz, t, o);
             return null;
-        });
+        }, executor);
     }
 
     public CompletableFuture<Boolean> needsFixing(UUID player) {
@@ -99,7 +102,7 @@ public final class DatabaseManager {
             Fadah.getConsole().severe("Tried to perform database action when the database is not connected!");
             return CompletableFuture.completedFuture(null);
         }
-        return CompletableFuture.supplyAsync(() -> handler.needsFixing(player));
+        return CompletableFuture.supplyAsync(() -> handler.needsFixing(player), executor);
     }
 
     public CompletableFuture<Void> fixPlayerData(UUID player) {
@@ -110,7 +113,7 @@ public final class DatabaseManager {
         return CompletableFuture.supplyAsync(() -> {
             handler.fixData(player);
             return null;
-        });
+        }, executor);
     }
 
     public boolean isConnected() {
@@ -139,7 +142,6 @@ public final class DatabaseManager {
         if (instance == null) {
             instance = new DatabaseManager();
             instance.handler.connect();
-            ListingCache.update();
         }
         return instance;
     }

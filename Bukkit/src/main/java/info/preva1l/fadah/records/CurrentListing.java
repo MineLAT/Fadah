@@ -4,18 +4,18 @@ import info.preva1l.fadah.Fadah;
 import info.preva1l.fadah.api.ListingEndEvent;
 import info.preva1l.fadah.api.ListingEndReason;
 import info.preva1l.fadah.api.ListingPurchaseEvent;
-import info.preva1l.fadah.cache.CollectionBoxCache;
-import info.preva1l.fadah.cache.ExpiredListingsCache;
 import info.preva1l.fadah.cache.ListingCache;
 import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
 import info.preva1l.fadah.config.ListHelper;
 import info.preva1l.fadah.config.Tuple;
 import info.preva1l.fadah.data.DatabaseManager;
-import info.preva1l.fadah.data.DatabaseType;
+import info.preva1l.fadah.guis.MainMenu;
+import info.preva1l.fadah.guis.ViewListingsMenu;
 import info.preva1l.fadah.multiserver.Message;
 import info.preva1l.fadah.multiserver.Payload;
 import info.preva1l.fadah.utils.TaskManager;
+import info.preva1l.fadah.utils.guis.FastInv;
 import info.preva1l.fadah.utils.logging.TransactionLogger;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -35,13 +35,22 @@ public final class CurrentListing extends Listing {
         super(id, owner, ownerName, itemStack, categoryID, currency, price, tax, creationDate, deletionDate, biddable, bids);
     }
 
+    private boolean notExist() {
+        if (Config.i().isStrictChecks() && DatabaseManager.getInstance().get(Listing.class, this.getId()) == null) {
+            ListingCache.update();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     @Override
-    public void purchase(@NotNull Player buyer) {
+    public synchronized void purchase(@NotNull Player buyer) {
         if (!getCurrency().canAfford(buyer, this.getPrice())) {
             buyer.sendMessage(Lang.i().getPrefix() + Lang.i().getErrors().getTooExpensive());
             return;
         }
-        if (ListingCache.getListing(this.getId()) == null) { // todo: readd strict checks
+        if (ListingCache.removeListing(this) == null || notExist()) {
             buyer.sendMessage(Lang.i().getPrefix() + Lang.i().getErrors().getDoesNotExist());
             return;
         }
@@ -51,24 +60,20 @@ public final class CurrentListing extends Listing {
         getCurrency().add(Bukkit.getOfflinePlayer(this.getOwner()), this.getPrice() - taxed);
 
         // Remove Listing
-        ListingCache.removeListing(this);
         if (Config.i().getBroker().isEnabled()) {
             Message.builder()
                     .type(Message.Type.LISTING_REMOVE)
                     .payload(Payload.withUUID(this.getId()))
                     .build().send(Fadah.getINSTANCE().getBroker());
         }
-        if (Config.i().getDatabase().getType() == DatabaseType.MONGO) {
-            DatabaseManager.getInstance().delete(Listing.class, this);
-        }
 
         // Add to collection box
         ItemStack itemStack = this.getItemStack().clone();
         CollectableItem collectableItem = new CollectableItem(this.getId(), this.getOwner(), itemStack, Instant.now().toEpochMilli());
-        CollectionBox box = CollectionBox.of(buyer.getUniqueId());
-        box.collectableItems().add(collectableItem);
-        CollectionBoxCache.addItem(buyer.getUniqueId(), collectableItem);
-        DatabaseManager.getInstance().save(CollectionBox.class, box);
+        DatabaseManager.getInstance().save(CollectionBox.class, CollectionBox.of(buyer.getUniqueId(), collectableItem));
+
+        FastInv.update(MainMenu.class);
+        FastInv.update(ViewListingsMenu.class);
 
         // Send Cache Updates
         if (Config.i().getBroker().isEnabled()) {
@@ -103,29 +108,25 @@ public final class CurrentListing extends Listing {
     }
 
     @Override
-    public boolean cancel(@NotNull Player canceller) {
-        if (ListingCache.getListing(this.getId()) == null) { // todo: re-add strict checks
+    public synchronized boolean cancel(@NotNull Player canceller) {
+        if (ListingCache.removeListing(this) == null || notExist()) {
             Lang.sendMessage(canceller, Lang.i().getPrefix() + Lang.i().getErrors().getDoesNotExist());
             return false;
         }
         Lang.sendMessage(canceller, Lang.i().getPrefix() + Lang.i().getNotifications().getCancelled());
-        ListingCache.removeListing(this);
         if (Config.i().getBroker().isEnabled()) {
             Message.builder()
                     .type(Message.Type.LISTING_REMOVE)
                     .payload(Payload.withUUID(this.getId()))
                     .build().send(Fadah.getINSTANCE().getBroker());
         }
-        if (Config.i().getDatabase().getType() == DatabaseType.MONGO) {
-            DatabaseManager.getInstance().delete(Listing.class, this);
-        }
 
 
         CollectableItem collectableItem = new CollectableItem(this.getId(), this.getOwner(), this.getItemStack(), Instant.now().toEpochMilli());
-        ExpiredItems items = ExpiredItems.of(getOwner());
-        items.collectableItems().add(collectableItem);
-        ExpiredListingsCache.addItem(getOwner(), collectableItem);
-        DatabaseManager.getInstance().save(ExpiredItems.class, items);
+        DatabaseManager.getInstance().save(ExpiredItems.class, ExpiredItems.of(collectableItem));
+
+        FastInv.update(MainMenu.class);
+        FastInv.update(ViewListingsMenu.class);
 
         if (Config.i().getBroker().isEnabled()) {
             Message.builder()

@@ -4,19 +4,17 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import info.preva1l.fadah.Fadah;
-import info.preva1l.fadah.cache.CollectionBoxCache;
-import info.preva1l.fadah.cache.ExpiredListingsCache;
-import info.preva1l.fadah.cache.HistoricItemsCache;
 import info.preva1l.fadah.cache.ListingCache;
 import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
-import info.preva1l.fadah.data.DatabaseManager;
-import info.preva1l.fadah.records.CollectionBox;
-import info.preva1l.fadah.records.ExpiredItems;
-import info.preva1l.fadah.records.History;
-import info.preva1l.fadah.records.Listing;
+import info.preva1l.fadah.guis.CollectionBoxMenu;
+import info.preva1l.fadah.guis.ExpiredListingsMenu;
+import info.preva1l.fadah.guis.HistoryMenu;
+import info.preva1l.fadah.guis.MainMenu;
+import info.preva1l.fadah.guis.ViewListingsMenu;
 import info.preva1l.fadah.utils.StringUtils;
 import info.preva1l.fadah.utils.TaskManager;
+import info.preva1l.fadah.utils.guis.FastInv;
 import info.preva1l.fadah.utils.guis.FastInvManager;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -47,43 +45,43 @@ public abstract class Broker {
         switch (message.getType()) {
             case LISTING_ADD -> message.getPayload()
                     .getUUID().ifPresentOrElse(uuid -> {
-                        DatabaseManager.getInstance().get(Listing.class, uuid)
-                                .thenAccept(listing -> listing.ifPresent(ListingCache::addListing));
+                        if (!ListingCache.getListings().containsKey(uuid)) {
+                            ListingCache.update();
+                        }
                         }, () -> {
                         throw new IllegalStateException("Listing add message received with no listing UUID!");
                     });
 
             case LISTING_REMOVE -> message.getPayload()
                     .getUUID().ifPresentOrElse(uuid -> {
-                        Listing listing = ListingCache.getListing(uuid);
-                        if (listing == null) {
-                            throw new IllegalStateException("Listing remove message received, but we do not have the same listing?");
+                        if (ListingCache.removeListing(uuid) == null) {
+                            Fadah.getConsole().warning("Listing remove message received, but we do not have the same listing: " + uuid);
+                            ListingCache.update();
+                        } else {
+                            FastInv.update(MainMenu.class);
+                            FastInv.update(ViewListingsMenu.class);
                         }
-                        ListingCache.removeListing(listing);
                         }, () -> {
                         throw new IllegalStateException("Listing remove message received with no listing UUID!");
                     });
 
             case COLLECTION_BOX_UPDATE -> message.getPayload()
                     .getUUID().ifPresentOrElse(uuid -> {
-                        DatabaseManager.getInstance().get(CollectionBox.class, uuid)
-                                .thenAccept(var1 -> var1.ifPresent(list -> CollectionBoxCache.update(uuid, list.collectableItems())));
+                        FastInv.update(CollectionBoxMenu.class, menu -> menu.getOwner().getUniqueId().equals(uuid));
                         }, () -> {
                         throw new IllegalStateException("Collection box update message received with no player UUID!");
                     });
 
             case EXPIRED_LISTINGS_UPDATE -> message.getPayload()
                     .getUUID().ifPresentOrElse(uuid -> {
-                        DatabaseManager.getInstance().get(ExpiredItems.class, uuid)
-                                .thenAccept(var1 -> var1.ifPresent(list -> ExpiredListingsCache.update(uuid, list.collectableItems())));
+                        FastInv.update(ExpiredListingsMenu.class, menu -> menu.getOwner().getUniqueId().equals(uuid));
                         }, () -> {
                         throw new IllegalStateException("Expired listings update message received with no player UUID!");
                     });
 
             case HISTORY_UPDATE -> message.getPayload()
                     .getUUID().ifPresentOrElse(uuid -> {
-                        DatabaseManager.getInstance().get(History.class, uuid)
-                                .thenAccept(history -> history.ifPresent(items -> HistoricItemsCache.update(uuid, items.collectableItems())));
+                        FastInv.update(HistoryMenu.class, menu -> menu.getOwner().getUniqueId().equals(uuid));
                         }, () -> {
                         throw new IllegalStateException("History update message received with no player UUID!");
                     });

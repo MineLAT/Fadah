@@ -16,6 +16,10 @@ import info.preva1l.fadah.currency.RedisEconomyCurrency;
 import info.preva1l.fadah.currency.VaultCurrency;
 import info.preva1l.fadah.data.DatabaseManager;
 import info.preva1l.fadah.data.DatabaseType;
+import info.preva1l.fadah.guis.ActiveListingsMenu;
+import info.preva1l.fadah.guis.ExpiredListingsMenu;
+import info.preva1l.fadah.guis.MainMenu;
+import info.preva1l.fadah.guis.ViewListingsMenu;
 import info.preva1l.fadah.hooks.HookManager;
 import info.preva1l.fadah.hooks.impl.DiscordHook;
 import info.preva1l.fadah.hooks.impl.EcoItemsHook;
@@ -34,6 +38,7 @@ import info.preva1l.fadah.utils.StringUtils;
 import info.preva1l.fadah.utils.TaskManager;
 import info.preva1l.fadah.utils.commands.CommandManager;
 import info.preva1l.fadah.utils.config.BasicConfig;
+import info.preva1l.fadah.utils.guis.FastInv;
 import info.preva1l.fadah.utils.guis.FastInvManager;
 import info.preva1l.fadah.utils.guis.LayoutManager;
 import info.preva1l.fadah.utils.logging.TransactionLogFormatter;
@@ -50,7 +55,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.FileHandler;
@@ -93,7 +100,7 @@ public final class Fadah extends JavaPlugin {
         loadCommands();
 
         getServer().getPluginManager().registerEvents(new PlayerListener(), this);
-        TaskManager.Async.runTask(this, listingExpiryTask(), 10L);
+        TaskManager.Async.runTask(this, listingExpiryTask(), 20L);
         FastInvManager.register(this);
 
         loadBroker();
@@ -131,20 +138,26 @@ public final class Fadah extends JavaPlugin {
 
     private Runnable listingExpiryTask() {
         return () -> {
-            for (UUID key : ListingCache.getListings().keySet()) {
-                Listing listing = ListingCache.getListing(key);
-                if (listing == null) continue;
+            final Set<Listing> toRemove = new HashSet<>();
+            ListingCache.getListings().entrySet().removeIf(entry -> {
+                final Listing listing = entry.getValue();
+                if (listing == null) {
+                    return true;
+                }
                 if (Instant.now().toEpochMilli() >= listing.getDeletionDate()) {
-                    ListingCache.removeListing(listing);
-                    if (Config.i().getDatabase().getType() == DatabaseType.MONGO) {
-                        DatabaseManager.getInstance().delete(Listing.class, listing);
-                    }
-
+                    toRemove.add(listing);
+                    return true;
+                }
+                return false;
+            });
+            if (!toRemove.isEmpty()) {
+                FastInv.update(MainMenu.class);
+                FastInv.update(ViewListingsMenu.class);
+                for (Listing listing : toRemove) {
                     CollectableItem collectableItem = new CollectableItem(listing.getId(), listing.getOwner(), listing.getItemStack(), Instant.now().toEpochMilli());
-                    ExpiredItems items = ExpiredItems.of(listing.getOwner());
-                    items.collectableItems().add(collectableItem);
-                    ExpiredListingsCache.addItem(listing.getOwner(), collectableItem);
-                    DatabaseManager.getInstance().save(ExpiredItems.class, items);
+                    DatabaseManager.getInstance().save(ExpiredItems.class, ExpiredItems.of(collectableItem));
+                    FastInv.update(ExpiredListingsMenu.class, menu -> menu.getOwner().getUniqueId().equals(listing.getOwner()));
+                    FastInv.update(ActiveListingsMenu.class, menu -> menu.getOwner().getUniqueId().equals(listing.getOwner()));
 
                     if (Config.i().getBroker().isEnabled()) {
                         Message.builder()
@@ -337,15 +350,6 @@ public final class Fadah extends JavaPlugin {
             if (needsFixing) {
                 DatabaseManager.getInstance().fixPlayerData(uuid).join();
             }
-
-            Optional<CollectionBox> collectionBox = DatabaseManager.getInstance().get(CollectionBox.class, uuid).join();
-            collectionBox.ifPresent(list -> CollectionBoxCache.update(uuid, list.collectableItems()));
-
-            Optional<ExpiredItems> expiredItems = DatabaseManager.getInstance().get(ExpiredItems.class, uuid).join();
-            expiredItems.ifPresent(list -> ExpiredListingsCache.update(uuid, list.collectableItems()));
-
-            Optional<History> history = DatabaseManager.getInstance().get(History.class, uuid).join();
-            history.ifPresent(list -> HistoricItemsCache.update(uuid, list.collectableItems()));
             return null;
         });
     }

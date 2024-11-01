@@ -1,12 +1,9 @@
 package info.preva1l.fadah.commands.subcommands;
 
 import info.preva1l.fadah.Fadah;
-import info.preva1l.fadah.cache.HistoricItemsCache;
 import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
-import info.preva1l.fadah.data.DatabaseManager;
 import info.preva1l.fadah.guis.ExpiredListingsMenu;
-import info.preva1l.fadah.records.History;
 import info.preva1l.fadah.utils.commands.SubCommand;
 import info.preva1l.fadah.utils.commands.SubCommandArgs;
 import info.preva1l.fadah.utils.commands.SubCommandArguments;
@@ -29,11 +26,8 @@ public class HistorySubCommand extends SubCommand {
         OfflinePlayer owner = command.getPlayer();
         if (command.args().length >= 1 && command.sender().hasPermission("fadah.manage.history")) {
             owner = Bukkit.getOfflinePlayer(command.args()[0]);
-            final OfflinePlayer finalOwner = owner;
-            DatabaseManager.getInstance().get(History.class, owner.getUniqueId())
-                    .thenAccept(history -> history.ifPresent(items -> HistoricItemsCache.update(finalOwner.getUniqueId(), items.collectableItems())));
         }
-        if (owner.getUniqueId() != command.getPlayer().getUniqueId() && !HistoricItemsCache.playerExists(owner.getUniqueId())) {
+        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
             command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
                     .replace("%player%", command.args()[0]));
             return;

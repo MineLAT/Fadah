@@ -1,6 +1,5 @@
 package info.preva1l.fadah.data.dao.hikari;
 
-import com.google.common.collect.Lists;
 import info.preva1l.fadah.data.DatabaseType;
 import info.preva1l.fadah.data.dao.SqlDao;
 import info.preva1l.fadah.data.handler.HikariHandler;
@@ -17,7 +16,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.UUID;
 
 public class ExpiredItemsHikariDao extends SqlDao<ExpiredItems> {
@@ -58,7 +57,7 @@ public class ExpiredItemsHikariDao extends SqlDao<ExpiredItems> {
 
     @Override
     protected @Nullable ExpiredItems select(UUID owner, Connection con, PreparedStatement stmt) throws SQLException {
-        final List<CollectableItem> retrievedData = Lists.newArrayList();
+        final LinkedHashSet<CollectableItem> retrievedData = new LinkedHashSet<>();
 
         stmt.setString(1, owner.toString());
         stmt.setLong(2, Instant.now().minus(2, ChronoUnit.DAYS).toEpochMilli());
