@@ -2,26 +2,17 @@ package info.preva1l.fadah.data;
 
 import info.preva1l.fadah.cache.ListingCache;
 import info.preva1l.fadah.config.Config;
-import info.preva1l.fadah.records.Listing;
 import lombok.AllArgsConstructor;
 import lombok.experimental.UtilityClass;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 
-import java.util.ArrayList;
-import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 @UtilityClass
 public class PermissionsData {
     public int getCurrentListings(Player player) {
-        Map<UUID, Listing> listings = ListingCache.getListings();
-        for (UUID key : new ArrayList<>(listings.keySet())) {
-            Listing listing = listings.get(key);
-            if (!listing.isOwner(player)) listings.remove(key);
-        }
-        return listings.size();
+        return ListingCache.getListings().values().stream().mapToInt(listing -> listing.isOwner(player) ? 1 : 0).sum();
     }
 
     public int getHighestInt(PermissionType type, Player player) {

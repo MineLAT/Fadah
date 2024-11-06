@@ -47,6 +47,9 @@ public abstract class Broker {
                     .getUUID().ifPresentOrElse(uuid -> {
                         if (!ListingCache.getListings().containsKey(uuid)) {
                             ListingCache.update();
+                            if (!ListingCache.getListings().containsKey(uuid)) {
+                                Fadah.getConsole().warning("Listing add message received, but the listing doesn't exist on database: " + uuid);
+                            }
                         }
                         }, () -> {
                         throw new IllegalStateException("Listing add message received with no listing UUID!");

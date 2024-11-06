@@ -236,14 +236,15 @@ public class NewListingMenu extends FastInv {
             return;
         }
 
-        DatabaseManager.getInstance().save(Listing.class, listing).thenRun(ListingCache::update);
-
-        if (Config.i().getBroker().isEnabled()) {
-            Message.builder()
-                    .type(Message.Type.LISTING_ADD)
-                    .payload(Payload.withUUID(listing.getId()))
-                    .build().send(Fadah.getINSTANCE().getBroker());
-        }
+        DatabaseManager.getInstance().save(Listing.class, listing).thenRun(() -> {
+            ListingCache.addListing(listing);
+            if (Config.i().getBroker().isEnabled()) {
+                Message.builder()
+                        .type(Message.Type.LISTING_ADD)
+                        .payload(Payload.withUUID(listing.getId()))
+                        .build().send(Fadah.getINSTANCE().getBroker());
+            }
+        });
 
         listingStarted = true;
 
