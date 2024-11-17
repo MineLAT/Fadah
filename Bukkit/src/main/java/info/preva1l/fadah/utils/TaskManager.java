@@ -1,8 +1,8 @@
 package info.preva1l.fadah.utils;
 
 import com.github.puregero.multilib.MultiLib;
-import info.preva1l.fadah.Fadah;
 import lombok.experimental.UtilityClass;
+import org.bukkit.plugin.Plugin;
 
 /**
  * Easy creation of Bukkit Tasks
@@ -18,33 +18,33 @@ public class TaskManager {
         /**
          * Run a synchronous task once. Helpful when needing to run some sync code in an async loop
          *
-         * @param plugin   The current plugin typeof JavaPlugin. (Not Commons)
+         * @param plugin   The current plugin
          * @param runnable The runnable, lambda supported yeh
          */
-        public void run(Fadah plugin, Runnable runnable) {
-            plugin.getServer().getScheduler().runTask(plugin, runnable);
+        public void run(Plugin plugin, Runnable runnable) {
+            MultiLib.getGlobalRegionScheduler().run(plugin,  t -> runnable.run());
         }
 
         /**
          * Run a synchronous task forever with a delay between runs.
          *
-         * @param plugin   The current plugin typeof JavaPlugin. (Not Commons)
+         * @param plugin   The current plugin
          * @param runnable The runnable, lambda supported yeh
          * @param interval Time between each run
          */
-        public void runTask(Fadah plugin, Runnable runnable, long interval) {
-            plugin.getServer().getScheduler().runTaskTimer(plugin, runnable, 0L, interval);
+        public void runTask(Plugin plugin, Runnable runnable, long interval) {
+            MultiLib.getGlobalRegionScheduler().runAtFixedRate(plugin,  t -> runnable.run(), 0L, interval);
         }
 
         /**
          * Run a synchronous task once with a delay. Helpful when needing to run some sync code in an async loop
          *
-         * @param plugin   The current plugin typeof JavaPlugin. (Not Commons)
+         * @param plugin   The current plugin
          * @param runnable The runnable, lambda supported yeh
          * @param delay    Time before running.
          */
-        public void runLater(Fadah plugin, Runnable runnable, long delay) {
-            plugin.getServer().getScheduler().runTaskLater(plugin, runnable, delay);
+        public void runLater(Plugin plugin, Runnable runnable, long delay) {
+            MultiLib.getGlobalRegionScheduler().runDelayed(plugin,  t -> runnable.run(), delay);
         }
     }
 
@@ -56,32 +56,32 @@ public class TaskManager {
         /**
          * Run an asynchronous task once. Helpful when needing to run some sync code in an async loop
          *
-         * @param plugin   The current plugin typeof JavaPlugin. (Not Commons)
+         * @param plugin   The current plugin
          * @param runnable The runnable, lambda supported yeh
          */
-        public static void run(Fadah plugin, Runnable runnable) {
+        public static void run(Plugin plugin, Runnable runnable) {
             MultiLib.getAsyncScheduler().runNow(plugin, task -> runnable.run());
         }
 
         /**
          * Run an asynchronous task forever with a delay between runs.
          *
-         * @param plugin   The current plugin typeof JavaPlugin. (Not Commons)
+         * @param plugin   The current plugin
          * @param runnable The runnable, lambda supported yeh
          * @param interval Time between each run
          */
-        public void runTask(Fadah plugin, Runnable runnable, long interval) {
+        public void runTask(Plugin plugin, Runnable runnable, long interval) {
             MultiLib.getAsyncScheduler().runAtFixedRate(plugin, task -> runnable.run(), 0L, interval);
         }
 
         /**
          * Run an asynchronous task once with a delay. Helpful when needing to run some sync code in an async loop
          *
-         * @param plugin   The current plugin typeof JavaPlugin. (Not Commons)
+         * @param plugin   The current plugin
          * @param runnable The runnable, lambda supported yeh
          * @param delay    Time before running.
          */
-        public void runLater(Fadah plugin, Runnable runnable, long delay) {
+        public void runLater(Plugin plugin, Runnable runnable, long delay) {
             MultiLib.getAsyncScheduler().runDelayed(plugin, task -> runnable.run(), delay);
         }
     }

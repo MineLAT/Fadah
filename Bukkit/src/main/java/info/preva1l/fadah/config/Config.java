@@ -39,8 +39,8 @@ public class Config {
     }
 
     private int defaultMaxListings = 3;
-    private String decimalFormat = "#,###.00";
     private boolean logToFile = true;
+    private boolean verbose = true;
 
     @Comment("Enable this if you are having de-sync issues with multi-server.")
     private boolean strictChecks = true;
@@ -53,6 +53,29 @@ public class Config {
     public static class ListingPrice {
         private double min = 100;
         private double max = 1000000000;
+    }
+
+    private Formatting formatting = new Formatting();
+
+    @Getter
+    @Configuration
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Formatting {
+        private String numbers = "#,###.00";
+        private String date = "dd/MM/yyyy HH:mm";
+        private Time time = new Time();
+
+        @Getter
+        @Configuration
+        @NoArgsConstructor(access = AccessLevel.PRIVATE)
+        public static class Time {
+            private String seconds = "%ds";
+            private String minutes = "%dm, %ds";
+            private String hours = "%dh, %dm, %ds";
+            private String days = "%dd, %dh, %dm, %ds";
+            private String months = "%dm, %dd, %dh, %dm, %ds";
+            private String years = "%dy, %dm, %dd, %dh, %dm, %ds";
+        }
     }
 
     private ListingAdverts listingAdverts = new ListingAdverts();

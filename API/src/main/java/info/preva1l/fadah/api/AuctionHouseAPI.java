@@ -101,6 +101,8 @@ public abstract class AuctionHouseAPI {
      */
     public abstract List<HistoricItem> getHistory(UUID uuid);
 
+    public abstract void verboseWarning(String message);
+
     /**
      * Get the locale for a logged action
      * @param action action

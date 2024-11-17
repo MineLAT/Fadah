@@ -18,7 +18,7 @@ public class HelpSubCommand extends SubCommand {
         StringBuilder message = new StringBuilder(Lang.i().getCommands().getHelp().getHeader());
         for (SubCommand subCommand : AuctionHouseCommand.getSubCommands()) {
             if (!command.sender().hasPermission(subCommand.getAssigned().permission())) continue;
-            message.append("\n").append(Lang.i().getCommands().getHelp().getDescription()
+            message.append("\n").append(Lang.i().getCommands().getHelp().getFormat()
                     .replace("%command%", subCommand.getAssigned().name())
                     .replace("%description%", subCommand.getDescription()));
         }

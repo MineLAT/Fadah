@@ -62,19 +62,19 @@ public class HistoryMenu extends PaginatedFastInv {
                         ? getLang().getLore("lore-with-buyer",
                         historicItem.getAction().getLocaleActionName(),
                         Bukkit.getOfflinePlayer(historicItem.getPurchaserUUID()).getName(),
-                        new DecimalFormat(Config.i().getDecimalFormat()).format(historicItem.getPrice()),
+                        new DecimalFormat(Config.i().getFormatting().getNumbers()).format(historicItem.getPrice()),
                         TimeUtil.formatTimeToVisualDate(historicItem.getLoggedDate()))
 
                         : getLang().getLore("lore-with-seller",
                         historicItem.getAction().getLocaleActionName(),
                         Bukkit.getOfflinePlayer(historicItem.getPurchaserUUID()).getName(),
-                        new DecimalFormat(Config.i().getDecimalFormat()).format(historicItem.getPrice()),
+                        new DecimalFormat(Config.i().getFormatting().getNumbers()).format(historicItem.getPrice()),
                         TimeUtil.formatTimeToVisualDate(historicItem.getLoggedDate()))
                 );
             } else if (historicItem.getPrice() != null && historicItem.getPrice() != 0d) {
                 itemStack.addLore(getLang().getLore("lore-with-price",
                         historicItem.getAction().getLocaleActionName(),
-                        new DecimalFormat(Config.i().getDecimalFormat()).format(historicItem.getPrice()),
+                        new DecimalFormat(Config.i().getFormatting().getNumbers()).format(historicItem.getPrice()),
                         TimeUtil.formatTimeToVisualDate(historicItem.getLoggedDate())
                 ));
             } else {

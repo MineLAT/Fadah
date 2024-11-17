@@ -212,7 +212,7 @@ public class StringUtils {
             return item.getItemMeta().getDisplayName();
         }
         if (item.getItemMeta() != null && item.getItemMeta().hasLocalizedName()) {
-            return item.getItemMeta().getLocalizedName();
+            return item.getItemMeta().getLocalizedName().replace("§", "&");
         }
         String[] split = item.getType().name().toLowerCase().split("_");
         StringBuilder builder = new StringBuilder();

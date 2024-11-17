@@ -1,5 +1,6 @@
 package info.preva1l.fadah.currency;
 
+import info.preva1l.fadah.api.AuctionHouseAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
@@ -16,8 +17,8 @@ public final class CurrencyRegistry {
         if (!currency.getRequiredPlugin().isEmpty()) {
             Plugin requiredPlugin = Bukkit.getPluginManager().getPlugin(currency.getRequiredPlugin());
             if (requiredPlugin == null || !requiredPlugin.isEnabled()) {
-                Logger.getLogger("Fadah")
-                        .warning("Tried enabling currency %s but the required plugin %s is not found/enabled!"
+                AuctionHouseAPI.getInstance()
+                        .verboseWarning("Tried enabling currency %s but the required plugin %s is not found/enabled!"
                                 .formatted(currency.getId().toLowerCase(), currency.getRequiredPlugin()));
                 return;
             }

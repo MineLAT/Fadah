@@ -75,7 +75,7 @@ public class DiscordHook implements Hook {
         return StringUtils.colorize(str
                 .replace("%player%", listing.getOwnerName())
                 .replace("%item%", StringUtils.removeColorCodes(StringUtils.extractItemName(listing.getItemStack())))
-                .replace("%price%", new DecimalFormat(Config.i().getDecimalFormat()).format(listing.getPrice())));
+                .replace("%price%", new DecimalFormat(Config.i().getFormatting().getNumbers()).format(listing.getPrice())));
     }
 
     private String getImageUrlForItem(Material material) {

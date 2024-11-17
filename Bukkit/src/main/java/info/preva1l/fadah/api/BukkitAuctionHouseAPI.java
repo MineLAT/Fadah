@@ -2,6 +2,7 @@ package info.preva1l.fadah.api;
 
 import info.preva1l.fadah.Fadah;
 import info.preva1l.fadah.cache.*;
+import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
 import info.preva1l.fadah.records.Category;
 import info.preva1l.fadah.records.CollectableItem;
@@ -66,6 +67,13 @@ public final class BukkitAuctionHouseAPI extends AuctionHouseAPI {
     @Override
     public List<HistoricItem> getHistory(UUID uuid) {
         return History.of(uuid).join().collectableItems();
+    }
+
+    @Override
+    public void verboseWarning(String message) {
+        if (Config.i().isVerbose()) {
+            Fadah.getConsole().warning(message);
+        }
     }
 
     @Override

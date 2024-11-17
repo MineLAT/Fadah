@@ -69,7 +69,7 @@ public class NewListingMenu extends FastInv {
                         .name(getLang().getStringFormatted("create.name", "&aClick to create listing!"))
                         .modelData(getLang().getInt("create.model-data"))
                         .addLore(getLang().getLore("create.lore",
-                                new DecimalFormat(Config.i().getDecimalFormat())
+                                new DecimalFormat(Config.i().getFormatting().getNumbers())
                                         .format(price)))
                         .setAttributes(null)
                         .flags(ItemFlag.HIDE_ATTRIBUTES)
@@ -100,6 +100,7 @@ public class NewListingMenu extends FastInv {
                         .name(getLang().getStringFormatted("time.name", "&aTime for listing to be active"))
                         .setAttributes(null)
                         .flags(ItemFlag.HIDE_ATTRIBUTES)
+                        .modelData(getLang().getInt("time.model-data"))
                         .addLore(getLang().getLore("time.lore", TimeUtil.formatTimeUntil(timeToDelete.toEpochMilli()))).build(), e -> {
             if (e.isRightClick()) {
                 if (e.isShiftClick()) {
@@ -148,7 +149,7 @@ public class NewListingMenu extends FastInv {
                         .setAttributes(null)
                         .flags(ItemFlag.HIDE_ATTRIBUTES)
                         .lore(getLang().getLore("advert.lore",
-                                new DecimalFormat(Config.i().getDecimalFormat())
+                                new DecimalFormat(Config.i().getFormatting().getNumbers())
                                         .format(PermissionsData.getHighestDouble(PermissionsData.PermissionType.ADVERT_PRICE, player)),
                                 postAdvert, dontPost)).build(), e -> {
                     this.advertise = !advertise;
@@ -254,12 +255,12 @@ public class NewListingMenu extends FastInv {
         String itemName = StringUtils.extractItemName(listing.getItemStack());
         String message = String.join("\n", ListHelper.replace(Lang.i().getNotifications().getNewListing(),
                 Tuple.of("%item%", itemName),
-                Tuple.of("%price%", new DecimalFormat(Config.i().getDecimalFormat()).format(listing.getPrice())),
+                Tuple.of("%price%", new DecimalFormat(Config.i().getFormatting().getNumbers()).format(listing.getPrice())),
                 Tuple.of("%time%", TimeUtil.formatTimeUntil(listing.getDeletionDate())),
                 Tuple.of("%current_listings%", PermissionsData.getCurrentListings(player) + ""),
                 Tuple.of("%max_listings%", PermissionsData.getHighestInt(PermissionsData.PermissionType.MAX_LISTINGS, player) + ""),
                 Tuple.of("%tax%", taxAmount + ""),
-                Tuple.of("%price_after_tax%", new DecimalFormat(Config.i().getDecimalFormat()).format((taxAmount / 100) * price))
+                Tuple.of("%price_after_tax%", new DecimalFormat(Config.i().getFormatting().getNumbers()).format((taxAmount / 100) * price))
         ));
         Lang.sendMessage(player, message);
 
@@ -284,7 +285,7 @@ public class NewListingMenu extends FastInv {
             String advertMessage = String.join("&r\n", ListHelper.replace(Lang.i().getNotifications().getAdvert(),
                     Tuple.of("%player%", player.getName()),
                     Tuple.of("%item%", itemName),
-                    Tuple.of("%price%", new DecimalFormat(Config.i().getDecimalFormat()).format(listing.getPrice()))
+                    Tuple.of("%price%", new DecimalFormat(Config.i().getFormatting().getNumbers()).format(listing.getPrice()))
             ));
 
             TaskManager.Async.run(Fadah.getINSTANCE(), () -> {

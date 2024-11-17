@@ -54,7 +54,7 @@ public class ViewListingsMenu extends PaginatedFastInv {
                     .addLore(getLang().getLore("listing.lore-body",
                             listing.getOwnerName(),
                             StringUtils.removeColorCodes(CategoryCache.getCatName(listing.getCategoryID())), buyMode,
-                            new DecimalFormat(Config.i().getDecimalFormat())
+                            new DecimalFormat(Config.i().getFormatting().getNumbers())
                                     .format(listing.getPrice()), TimeUtil.formatTimeUntil(listing.getDeletionDate())));
 
             if (player.getUniqueId().equals(listing.getOwner())) {

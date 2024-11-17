@@ -1,6 +1,7 @@
 package info.preva1l.fadah.utils.guis;
 
 import com.github.puregero.multilib.MultiLib;
+import info.preva1l.fadah.utils.TaskManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -87,7 +88,7 @@ public final class FastInvManager {
         public void onInventoryClose(InventoryCloseEvent e) {
             if (e.getInventory().getHolder() instanceof FastInv inv) {
                 if (inv.handleClose(e)) {
-                    Bukkit.getScheduler().runTask(this.plugin, () -> inv.open((Player) e.getPlayer()));
+                    TaskManager.Sync.run(this.plugin, () -> inv.open((Player) e.getPlayer()));
                 }
             }
         }

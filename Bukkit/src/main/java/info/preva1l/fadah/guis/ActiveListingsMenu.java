@@ -49,7 +49,7 @@ public class ActiveListingsMenu extends PaginatedFastInv {
         for (Listing listing : listings) {
             ItemBuilder itemStack = new ItemBuilder(listing.getItemStack().clone())
                     .addLore(getLang().getLore("lore", StringUtils.removeColorCodes(CategoryCache.getCatName(listing.getCategoryID())),
-                            new DecimalFormat(Config.i().getDecimalFormat()).format(listing.getPrice()),
+                            new DecimalFormat(Config.i().getFormatting().getNumbers()).format(listing.getPrice()),
                             TimeUtil.formatTimeUntil(listing.getDeletionDate())));
 
             addPaginationItem(new PaginatedItem(itemStack.build(), e -> {

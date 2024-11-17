@@ -88,7 +88,7 @@ public final class CurrentListing extends Listing {
 
         String itemName = this.getItemStack().getItemMeta().getDisplayName().isBlank() ?
                 this.getItemStack().getType().name() : this.getItemStack().getItemMeta().getDisplayName();
-        String formattedPrice = new DecimalFormat(Config.i().getDecimalFormat()).format(this.getPrice() - taxed);
+        String formattedPrice = new DecimalFormat(Config.i().getFormatting().getNumbers()).format(this.getPrice() - taxed);
         String message = String.join("\n", ListHelper.replace(Lang.i().getNotifications().getSale(),
                 Tuple.of("%item%", itemName),
                 Tuple.of("%price%", formattedPrice)));
