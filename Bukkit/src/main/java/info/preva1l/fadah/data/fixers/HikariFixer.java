@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import info.preva1l.fadah.data.dao.SqlDao;
-import info.preva1l.fadah.data.gson.ConfigurationSerializableAdapter;
+import info.preva1l.fadah.data.gson.BukkitSerializableAdapter;
 import info.preva1l.fadah.data.handler.DataHandler;
 import info.preva1l.fadah.data.handler.HikariHandler;
 import info.preva1l.fadah.records.CollectableItem;
@@ -31,7 +31,7 @@ import java.util.UUID;
 public class HikariFixer {
 
     private static final Gson GSON = new GsonBuilder()
-            .registerTypeHierarchyAdapter(ConfigurationSerializable.class, new ConfigurationSerializableAdapter())
+            .registerTypeHierarchyAdapter(ConfigurationSerializable.class, new BukkitSerializableAdapter())
             .serializeNulls().disableHtmlEscaping().create();
     private static final Type COLLECTABLE_ITEM_TYPE = new TypeToken<ArrayList<CollectableItem>>() {}.getType();
 

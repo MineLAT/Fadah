@@ -87,7 +87,6 @@ public class HikariHandler implements DatabaseHandler {
             config.setJdbcUrl(String.format("jdbc:%s:%s", getType().getId(), file.getAbsolutePath()));
             config.setConnectionTestQuery("SELECT 1");
             config.setMaxLifetime(60000);
-            config.setIdleTimeout(45000);
             config.setMaximumPoolSize(50);
 
             this.hikari = new HikariDataSource(config);
