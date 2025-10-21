@@ -10,12 +10,21 @@ import info.preva1l.fadah.utils.commands.CommandArgs;
 import info.preva1l.fadah.utils.commands.CommandArguments;
 import info.preva1l.fadah.utils.commands.SubCommand;
 import lombok.Getter;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class AuctionHouseCommand extends Command {
+
+    private static final Map<UUID, Long> TIMER = new HashMap<>();
+
     @Getter
     private static final List<SubCommand> subCommands = new ArrayList<>();
 
@@ -37,6 +46,23 @@ public class AuctionHouseCommand extends Command {
 
     @CommandArgs(name = "fadah", inGameOnly = false, permission = "fadah.use")
     public void execute(@NotNull CommandArguments command) {
+        if (command.sender() instanceof Player && Config.i().getExperimental().getCommandDelay() > 0) {
+            final long currentTime = System.currentTimeMillis();
+            final Player player = command.getPlayer();
+            final long value = TIMER.getOrDefault(player.getUniqueId(), 0L);
+            if (value > currentTime) {
+                final long difference = value - currentTime;
+                if (difference < Config.i().getExperimental().getUnusualDelay()) {
+                    for (String comand : Config.i().getExperimental().getDelayCommands()) {
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), comand.replace("{player}", player.getName()));
+                    }
+                }
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', Config.i().getExperimental().getDelayError().replace("{time}", String.valueOf(difference / 1000))));
+                return;
+            }
+            TIMER.put(player.getUniqueId(), currentTime + Config.i().getExperimental().getCommandDelay());
+        }
+
         if (command.args().length >= 1) {
             if (subCommandExecutor(command, subCommands)) return;
             command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getCommandNotFound());

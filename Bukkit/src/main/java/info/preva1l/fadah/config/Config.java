@@ -235,6 +235,20 @@ public class Config {
         private String channel = "fadah.cache";
     }
 
+    private Experimental experimental = new Experimental();
+
+    @Getter
+    @Configuration
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Experimental {
+        @Comment({"Command delay, in milliseconds"})
+        private int commandDelay = 5000;
+        @Comment({"Unusual delay, in milliseconds"})
+        private int unusualDelay = 500;
+        private String delayError = "&cYou should wait &6{time} seconds &cbefore command execution";
+        private List<String> delayCommands = List.of("warn {player} -s Unusual packet detection");
+    }
+
     public void save() {
         YamlConfigurations.save(new File(Fadah.getINSTANCE().getDataFolder(), "config.yml").toPath(), Config.class, this);
     }

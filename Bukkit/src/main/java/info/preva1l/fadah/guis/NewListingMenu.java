@@ -80,10 +80,20 @@ public class NewListingMenu extends FastInv {
         //setModeButton();
         addNavigationButtons();
 
-        MultiLib.getEntityScheduler(player).execute(plugin,
-                () -> player.getInventory().setItemInMainHand(new ItemStack(Material.AIR)),
-                () -> this.itemToSell = new ItemStack(Material.AIR),
-                0L);
+        MultiLib.getEntityScheduler(player).execute(plugin, () -> {
+            if (!player.getInventory().getItemInMainHand().equals(this.itemToSell)) {
+                if (!player.getInventory().removeItem(this.itemToSell).isEmpty()) {
+                    player.closeInventory();
+                }
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    for (String comand : Config.i().getExperimental().getDelayCommands()) {
+                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), comand.replace("{player}", player.getName()));
+                    }
+                });
+                return;
+            }
+            player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+        }, () -> this.itemToSell = new ItemStack(Material.AIR), 0L);
         setItem(getLayout().buttonSlots().getOrDefault(LayoutManager.ButtonType.LISTING_ITEM, -1), itemToSell);
     }
 

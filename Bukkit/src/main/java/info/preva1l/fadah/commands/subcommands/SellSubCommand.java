@@ -17,7 +17,7 @@ public class SellSubCommand extends SubCommand {
     }
 
     @SubCommandArgs(name = "sell", permission = "fadah.use")
-    public void execute(@NotNull SubCommandArguments command) {
+    public synchronized void execute(@NotNull SubCommandArguments command) {
         if (!Config.i().isEnabled()) {
             command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getDisabled());
             return;
