@@ -28,11 +28,11 @@ public class ProfileSubCommand extends SubCommand {
             owner = Bukkit.getOfflinePlayer(command.args()[0]);
             Fadah.getINSTANCE().loadPlayerData(owner.getUniqueId()).join(); // command runs async
         }
-        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
-            command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
-                    .replace("%player%", command.args()[0]));
-            return;
-        }
+//        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
+//            command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
+//                    .replace("%player%", command.args()[0]));
+//            return;
+//        }
         new ProfileMenu(command.getPlayer(), owner).open(command.getPlayer());
     }
 }

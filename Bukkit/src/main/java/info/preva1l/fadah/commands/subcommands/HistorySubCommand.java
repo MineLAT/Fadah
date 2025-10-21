@@ -27,11 +27,11 @@ public class HistorySubCommand extends SubCommand {
         if (command.args().length >= 1 && command.sender().hasPermission("fadah.manage.history")) {
             owner = Bukkit.getOfflinePlayer(command.args()[0]);
         }
-        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
-            command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
-                    .replace("%player%", command.args()[0]));
-            return;
-        }
+//        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
+//            command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
+//                    .replace("%player%", command.args()[0]));
+//            return;
+//        }
         new ExpiredListingsMenu(command.getPlayer(), owner, 0).open(command.getPlayer());
     }
 }
