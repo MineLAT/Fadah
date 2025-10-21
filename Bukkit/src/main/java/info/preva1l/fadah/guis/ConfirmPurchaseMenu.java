@@ -1,5 +1,6 @@
 package info.preva1l.fadah.guis;
 
+import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.filters.SortingDirection;
 import info.preva1l.fadah.filters.SortingMethod;
 import info.preva1l.fadah.records.Category;
@@ -10,6 +11,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
+import java.text.DecimalFormat;
 import java.util.List;
 
 public class ConfirmPurchaseMenu extends FastInv {
@@ -31,11 +33,12 @@ public class ConfirmPurchaseMenu extends FastInv {
                     GuiHelper.constructButton(GuiButtonType.BORDER));
         }
 
+        final String price = new DecimalFormat(Config.i().getFormatting().getNumbers()).format(listing.getPrice());
         setItem(getLayout().buttonSlots().getOrDefault(LayoutManager.ButtonType.CONFIRM, -1),
                 new ItemBuilder(getLang().getAsMaterial("confirm.icon", Material.LIME_CONCRETE))
-                        .name(getLang().getStringFormatted("confirm.name", "&a&lCONFIRM"))
+                        .name(getLang().getStringFormatted("confirm.name", "&a&lCONFIRM", price))
                         .modelData(getLang().getInt("confirm.model-data"))
-                        .lore(getLang().getLore("confirm.lore")).build(), e -> {
+                        .lore(getLang().getLore("confirm.lore", price)).build(), e -> {
             player.closeInventory();
             listing.purchase(((Player) e.getWhoClicked()));
         });
