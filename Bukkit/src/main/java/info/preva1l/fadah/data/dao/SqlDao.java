@@ -2,7 +2,6 @@ package info.preva1l.fadah.data.dao;
 
 import info.preva1l.fadah.data.DatabaseType;
 import info.preva1l.fadah.data.handler.HikariHandler;
-import org.apache.commons.lang.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,7 +45,7 @@ public abstract class SqlDao<T> implements Dao<T> {
     public String sql(@NotNull Statement type) {
         final String sql = this.statements.get(type);
         if (sql == null) {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
         return sql;
     }
@@ -104,7 +103,7 @@ public abstract class SqlDao<T> implements Dao<T> {
 
     @Nullable
     protected T select(UUID id, Connection con, PreparedStatement stmt) throws SQLException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -117,7 +116,7 @@ public abstract class SqlDao<T> implements Dao<T> {
     }
 
     protected List<T> selectAll(Connection con, PreparedStatement stmt) throws SQLException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -130,7 +129,7 @@ public abstract class SqlDao<T> implements Dao<T> {
     }
 
     protected void insert(T t, Connection con, PreparedStatement stmt) throws SQLException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -143,7 +142,7 @@ public abstract class SqlDao<T> implements Dao<T> {
     }
 
     protected void update(T t, String[] params, Connection con, PreparedStatement stmt) throws SQLException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -156,7 +155,7 @@ public abstract class SqlDao<T> implements Dao<T> {
     }
 
     protected void delete(T t, Connection con, PreparedStatement stmt) throws SQLException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -169,7 +168,7 @@ public abstract class SqlDao<T> implements Dao<T> {
     }
 
     protected void deleteSpecific(T t, Object o, Connection con, PreparedStatement stmt) throws SQLException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     public enum Statement {

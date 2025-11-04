@@ -9,7 +9,6 @@ import info.preva1l.fadah.records.ExpiredItems;
 import info.preva1l.fadah.utils.ItemSerializer;
 import info.preva1l.fadah.utils.mongo.CollectionHelper;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang.NotImplementedException;
 import org.bson.Document;
 import org.bukkit.inventory.ItemStack;
 
@@ -36,7 +35,7 @@ public class ExpiredItemsMongoDao implements Dao<ExpiredItems> {
             final FindIterable<Document> documents = collection.find().filter(Filters.eq("playerUUID", id));
             for (Document document : documents) {
                 long dateAdded = document.getLong("dateAdded");
-                ItemStack itemStack = ItemSerializer.deserialize(document.getString("itemStack"))[0];
+                ItemStack itemStack = ItemSerializer.deserialize(document.getString("itemStack"));
                 list.add(new CollectableItem(itemStack, dateAdded));
             }
             return Optional.of(new ExpiredItems(id, list));
@@ -53,7 +52,7 @@ public class ExpiredItemsMongoDao implements Dao<ExpiredItems> {
      */
     @Override
     public List<ExpiredItems> getAll() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -85,7 +84,7 @@ public class ExpiredItemsMongoDao implements Dao<ExpiredItems> {
      */
     @Override
     public void update(ExpiredItems expiredItems, String[] params) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -95,7 +94,7 @@ public class ExpiredItemsMongoDao implements Dao<ExpiredItems> {
      */
     @Override
     public void delete(ExpiredItems expiredItems) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override

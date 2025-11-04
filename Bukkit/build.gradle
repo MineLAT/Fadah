@@ -1,7 +1,6 @@
 repositories {
     maven { url 'https://repo.auxilor.io/repository/maven-public/' }
-    maven { url 'https://oss.sonatype.org/content/groups/public/' }
-    maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+    maven { url 'https://repo.papermc.io/repository/maven-public/' }
     maven { url 'https://jitpack.io' }
     maven { url 'https://repo.codemc.io/repository/maven-snapshots/' }
     maven { url 'https://repo.clojars.org/' }
@@ -12,12 +11,12 @@ repositories {
 
 dependencies {
     implementation project(":API")
-    compileOnly 'org.spigotmc:spigot-api:1.16.5-R0.1-SNAPSHOT'
+    compileOnly 'io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT'
 
     // Support mini message format
-    compileOnly 'net.kyori:adventure-text-minimessage:4.17.0'
-    compileOnly 'net.kyori:adventure-api:4.17.0'
-    compileOnly 'net.kyori:adventure-platform-bukkit:4.3.3'
+    compileOnly 'net.kyori:adventure-text-minimessage:4.25.0'
+    compileOnly 'net.kyori:adventure-api:4.25.0'
+    compileOnly 'net.kyori:adventure-platform-bukkit:4.4.1'
 
     compileOnly 'de.exlll:configlib-yaml:4.5.0' // Configs
 
@@ -40,11 +39,11 @@ dependencies {
     }
     compileOnly 'org.mongodb:mongodb-driver-sync:5.0.0'
 
-    implementation 'net.wesjd:anvilgui:1.10.2-SNAPSHOT' // Search Menu
+    implementation 'net.wesjd:anvilgui:1.10.4-SNAPSHOT' // Search Menu
 
     compileOnly 'org.mozilla:rhino:1.7.14'
 
-    compileOnly 'com.github.MilkBowl:VaultAPI:1.7' // Economy Hook
+    compileOnly('com.github.MilkBowl:VaultAPI:1.7') { transitive = false } // Economy Hook
 
     // Extra Hooks
     // Eco Items

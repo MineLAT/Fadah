@@ -9,7 +9,6 @@ import info.preva1l.fadah.records.CollectionBox;
 import info.preva1l.fadah.utils.ItemSerializer;
 import info.preva1l.fadah.utils.mongo.CollectionHelper;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang.NotImplementedException;
 import org.bson.Document;
 import org.bukkit.inventory.ItemStack;
 
@@ -36,7 +35,7 @@ public class CollectionBoxMongoDao implements Dao<CollectionBox> {
             final FindIterable<Document> documents = collection.find().filter(Filters.eq("playerUUID", id));
             for (Document document : documents) {
                 long dateAdded = document.getLong("dateAdded");
-                ItemStack itemStack = ItemSerializer.deserialize(document.getString("itemStack"))[0];
+                ItemStack itemStack = ItemSerializer.deserialize(document.getString("itemStack"));
                 list.add(new CollectableItem(itemStack, dateAdded));
             }
             return Optional.of(new CollectionBox(id, list));
@@ -53,7 +52,7 @@ public class CollectionBoxMongoDao implements Dao<CollectionBox> {
      */
     @Override
     public List<CollectionBox> getAll() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -85,7 +84,7 @@ public class CollectionBoxMongoDao implements Dao<CollectionBox> {
      */
     @Override
     public void update(CollectionBox collectionBox, String[] params) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -95,7 +94,7 @@ public class CollectionBoxMongoDao implements Dao<CollectionBox> {
      */
     @Override
     public void delete(CollectionBox collectionBox) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override

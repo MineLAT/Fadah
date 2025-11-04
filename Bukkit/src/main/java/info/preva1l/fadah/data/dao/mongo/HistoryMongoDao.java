@@ -10,7 +10,6 @@ import info.preva1l.fadah.records.History;
 import info.preva1l.fadah.utils.ItemSerializer;
 import info.preva1l.fadah.utils.mongo.CollectionHelper;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang.NotImplementedException;
 import org.bson.Document;
 import org.bukkit.inventory.ItemStack;
 
@@ -38,7 +37,7 @@ public class HistoryMongoDao implements Dao<History> {
             try {
                 final long loggedDate = document.getLong("loggedDate");
                 final Double price = document.getDouble("price");
-                final ItemStack itemStack = ItemSerializer.deserialize(document.getString("itemStack"))[0];
+                final ItemStack itemStack = ItemSerializer.deserialize(document.getString("itemStack"));
                 final HistoricItem.LoggedAction loggedAction = HistoricItem.LoggedAction.values()[document.getInteger("loggedAction")];
                 final UUID purchaserUUID = document.getString("purchaserUUID") == null ? null : UUID.fromString(document.getString("purchaserUUID"));
                 list.add(new HistoricItem(DataHandler.DUMMY_ID, id, loggedDate, loggedAction, itemStack, price, purchaserUUID));
@@ -56,7 +55,7 @@ public class HistoryMongoDao implements Dao<History> {
      */
     @Override
     public List<History> getAll() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -91,7 +90,7 @@ public class HistoryMongoDao implements Dao<History> {
      */
     @Override
     public void update(History history, String[] params) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -101,6 +100,6 @@ public class HistoryMongoDao implements Dao<History> {
      */
     @Override
     public void delete(History history) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 }

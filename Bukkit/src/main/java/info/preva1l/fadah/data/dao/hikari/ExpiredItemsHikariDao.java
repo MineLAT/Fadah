@@ -67,7 +67,7 @@ public class ExpiredItemsHikariDao extends SqlDao<ExpiredItems> {
         while (result.next()) {
             final UUID id = UUID.fromString(result.getString("uuid"));
             final UUID ownerId = UUID.fromString(result.getString("owner_id"));
-            final ItemStack itemStack = ItemSerializer.deserialize(result.getString("item"))[0];
+            final ItemStack itemStack = ItemSerializer.deserialize(result.getString("item"));
             final long dateAdded = result.getLong("update");
             retrievedData.add(new CollectableItem(id, ownerId, itemStack, dateAdded));
         }

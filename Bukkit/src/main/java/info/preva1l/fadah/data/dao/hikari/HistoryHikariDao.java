@@ -66,7 +66,7 @@ public class HistoryHikariDao extends SqlDao<History> {
             final UUID ownerId = UUID.fromString(result.getString("owner_id"));
             final String buyer = result.getString("buyer_id");
             final UUID buyerId = buyer == null ? null : UUID.fromString(buyer);
-            final ItemStack itemStack = ItemSerializer.deserialize(result.getString("item"))[0];
+            final ItemStack itemStack = ItemSerializer.deserialize(result.getString("item"));
             final long time = result.getLong("time");
             final double price = result.getDouble("price");
             final long update = result.getLong("update");

@@ -1,7 +1,5 @@
 package info.preva1l.fadah.data.dao;
 
-import org.apache.commons.lang.NotImplementedException;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +48,6 @@ public interface Dao<T> {
      * @param o the object to delete
      */
     default void deleteSpecific(T t, Object o) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 }

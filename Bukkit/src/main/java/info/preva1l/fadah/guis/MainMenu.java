@@ -109,10 +109,10 @@ public class MainMenu extends ScrollBarFastInv {
                             ItemFlag.HIDE_DESTROYS,
                             ItemFlag.HIDE_PLACED_ON,
                             ItemFlag.HIDE_DYE,
-                            ItemFlag.HIDE_POTION_EFFECTS);
+                            ItemFlag.values()[5]); // HIDE_ADDITIONAL_TOOLTIP
             if (category == cat) {
                 itemBuilder.name(StringUtils.colorize(cat.name() + "&r " + Lang.i().getCategorySelected()))
-                        .enchant(Enchantment.DURABILITY);
+                        .enchant(Enchantment.KNOCKBACK);
                 itemBuilder.flags(ItemFlag.HIDE_ENCHANTS);
             }
 

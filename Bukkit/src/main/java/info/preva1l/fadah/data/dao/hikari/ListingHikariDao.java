@@ -16,7 +16,9 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -57,7 +59,7 @@ public class ListingHikariDao extends SqlDao<Listing> {
         if (result.next()) {
             final UUID ownerId = UUID.fromString(result.getString("owner_id"));
             final String ownerName = result.getString("owner_name");
-            final ItemStack itemStack = ItemSerializer.deserialize(result.getString("item"))[0];
+            final ItemStack itemStack = ItemSerializer.deserialize(result.getString("item"));
             final String temp = result.getString("category");
             final String category;
             final String currency;
@@ -79,6 +81,8 @@ public class ListingHikariDao extends SqlDao<Listing> {
         return listing;
     }
 
+    private static final Set<UUID> ERROR = new HashSet<>();
+
     @Override
     protected List<Listing> selectAll(Connection con, PreparedStatement stmt) throws SQLException {
         stmt.setLong(1, Instant.now().minus(2, ChronoUnit.DAYS).toEpochMilli());
@@ -90,7 +94,15 @@ public class ListingHikariDao extends SqlDao<Listing> {
             final UUID id = UUID.fromString(result.getString("uuid"));
             final UUID ownerId = UUID.fromString(result.getString("owner_id"));
             final String ownerName = result.getString("owner_name");
-            final ItemStack itemStack = ItemSerializer.deserialize(result.getString("item"))[0];
+            final String str = result.getString("item");
+            final ItemStack itemStack;
+            try {
+                itemStack = ItemSerializer.deserialize(str);
+            } catch (Throwable t) {
+                ERROR.add(id);
+                System.out.println("Error with " + id + ": " + str);
+                continue;
+            }
             final String temp = result.getString("category");
             final String category;
             final String currency;
@@ -108,6 +120,10 @@ public class ListingHikariDao extends SqlDao<Listing> {
             final long deletionDate = creationDate + TimeUnit.DAYS.toMillis(2);
             final boolean biddable = result.getBoolean("biddable");
             list.add(new CurrentListing(id, ownerId, ownerName, itemStack, category, currency, price, tax, creationDate, deletionDate, biddable, List.of()));
+        }
+        System.out.println("Total errors = " + ERROR.size());
+        for (UUID uuid : ERROR) {
+            System.out.println(" - " + uuid);
         }
         return list;
     }

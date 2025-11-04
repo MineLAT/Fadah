@@ -9,7 +9,6 @@ import info.preva1l.fadah.records.Listing;
 import info.preva1l.fadah.utils.ItemSerializer;
 import info.preva1l.fadah.utils.mongo.CollectionHelper;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang.NotImplementedException;
 import org.bson.Document;
 import org.bukkit.inventory.ItemStack;
 
@@ -51,7 +50,7 @@ public class ListingMongoDao implements Dao<Listing> {
             final long deletionDate = doc.getLong("deletionDate");
             final double price = doc.getDouble("price");
             final double tax = doc.getDouble("tax");
-            final ItemStack itemStack = ItemSerializer.deserialize(doc.getString("itemStack"))[0];
+            final ItemStack itemStack = ItemSerializer.deserialize(doc.getString("itemStack"));
             final boolean biddable = doc.getBoolean("biddable");
             final List<Bid> bids = List.of();
             return Optional.of(new CurrentListing(id, owner, ownerName, itemStack, category, currency, price, tax, creationDate, deletionDate, biddable, bids));
@@ -90,7 +89,7 @@ public class ListingMongoDao implements Dao<Listing> {
                 final long deletionDate = doc.getLong("deletionDate");
                 final double price = doc.getDouble("price");
                 final double tax = doc.getDouble("tax");
-                final ItemStack itemStack = ItemSerializer.deserialize(doc.getString("itemStack"))[0];
+                final ItemStack itemStack = ItemSerializer.deserialize(doc.getString("itemStack"));
                 final boolean biddable = doc.getBoolean("biddable");
                 final List<Bid> bids = List.of();
                 list.add(new CurrentListing(id, owner, ownerName, itemStack, category, currency, price, tax, creationDate, deletionDate, biddable, bids));
@@ -135,7 +134,7 @@ public class ListingMongoDao implements Dao<Listing> {
      */
     @Override
     public void update(Listing listing, String[] params) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     /**
