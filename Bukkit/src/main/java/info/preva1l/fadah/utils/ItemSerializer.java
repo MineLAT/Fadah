@@ -24,7 +24,6 @@ public class ItemSerializer {
 
     public static final int DATA_VERSION;
     public static final String INVALID_VERSION_MESSAGE = "Newer version! Server downgrades are not supported!";
-    public static final IllegalArgumentException INVALID_VERSION_EXCEPTION = new IllegalArgumentException(INVALID_VERSION_MESSAGE);
 
     static {
         final String serverPackage = Bukkit.getServer().getClass().getPackage().getName();
@@ -45,14 +44,14 @@ public class ItemSerializer {
     @NotNull
     public static ItemStack deserialize(@NotNull String source) {
         final byte[] data = Base64.getDecoder().decode(source.replaceAll("\\s", ""));
-        if (((data[0] << 8) | (data[1] & 0xFF)) == ObjectStreamConstants.STREAM_MAGIC) { // Old format
+        if (((data[0] << 8) | (data[1] & 0xFF)) == ObjectStreamConstants.STREAM_MAGIC) { // old format
             return bukkitDeserialize(data);
         } else {
             try {
                 return ItemStack.deserializeBytes(data);
             } catch (IllegalArgumentException e) {
                 if (e.getMessage().equals(INVALID_VERSION_MESSAGE)) {
-                    throw INVALID_VERSION_EXCEPTION;
+                    throw new InvalidVersionException(e);
                 } else {
                     throw e;
                 }
@@ -62,13 +61,12 @@ public class ItemSerializer {
 
     @SuppressWarnings("deprecation")
     @NotNull
-    public static String bukkitSerialize(@NotNull ItemStack... items) {
+    public static String bukkitSerialize(@NotNull ItemStack item) {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream(); BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream)) {
 
-            dataOutput.writeInt(items.length);
+            dataOutput.writeInt(1);
 
-            for (ItemStack item : items)
-                dataOutput.writeObject(item);
+            dataOutput.writeObject(item);
 
             return Base64.getEncoder().encodeToString(outputStream.toByteArray());
 
@@ -79,7 +77,12 @@ public class ItemSerializer {
 
     @NotNull
     public static ItemStack bukkitDeserialize(@NotNull String source) {
-        return bukkitDeserialize(Base64.getDecoder().decode(source.replaceAll("\\s", "")));
+        final byte[] data = Base64.getDecoder().decode(source.replaceAll("\\s", ""));
+        if (((data[0] << 8) | (data[1] & 0xFF)) == ObjectStreamConstants.STREAM_MAGIC) {
+            return bukkitDeserialize(data);
+        } else {
+            throw new IllegalArgumentException("Invalid item data format");
+        }
     }
 
     @SuppressWarnings("deprecation")
@@ -87,7 +90,7 @@ public class ItemSerializer {
     public static ItemStack bukkitDeserialize(byte[] data) {
         final Integer version = bukkitVersion(data);
         if (version != null && version > DATA_VERSION) {
-            throw INVALID_VERSION_EXCEPTION;
+            throw new InvalidVersionException();
         }
 
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data); BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream)) {
@@ -106,6 +109,10 @@ public class ItemSerializer {
     @Nullable
     public static Integer bukkitVersion(byte[] data) {
         try (WrapperInputStream in = new WrapperInputStream(new ByteArrayInputStream(data))) {
+            // Skip length
+            in.readInt();
+
+            // Read as Map
             final Object object = in.readObject();
             if (object instanceof Map<?, ?> map) {
                 final Object version = map.get("v");
@@ -116,6 +123,17 @@ public class ItemSerializer {
             throw new RuntimeException(t);
         }
         return null;
+    }
+
+    public static class InvalidVersionException extends RuntimeException {
+
+        public InvalidVersionException() {
+            super(INVALID_VERSION_MESSAGE);
+        }
+
+        public InvalidVersionException(@NotNull Throwable throwable) {
+            super(throwable);
+        }
     }
 
     private static class WrapperInputStream extends BukkitObjectInputStream {
@@ -144,7 +162,7 @@ public class ItemSerializer {
         protected Object resolveObject(Object obj) throws IOException {
             if (WRAPPER_TYPE.isInstance(obj)) {
                 try {
-                    return WRAPPER_MAP.invoke(obj);
+                    (obj = WRAPPER_MAP.invoke(obj)).getClass();
                 } catch (Throwable e) {
                     throw new RuntimeException(e);
                 }

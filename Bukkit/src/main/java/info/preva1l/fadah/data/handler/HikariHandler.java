@@ -253,7 +253,7 @@ public class HikariHandler implements DatabaseHandler {
 
                     final String modified;
                     try {
-                        modified = ItemSerializer.serialize(ItemSerializer.deserialize(item));
+                        modified = ItemSerializer.serialize(ItemSerializer.bukkitDeserialize(item));
                     } catch (Throwable t) {
                         continue;
                     }

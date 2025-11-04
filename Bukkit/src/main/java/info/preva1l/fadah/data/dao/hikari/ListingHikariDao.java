@@ -1,5 +1,6 @@
 package info.preva1l.fadah.data.dao.hikari;
 
+import info.preva1l.fadah.Fadah;
 import info.preva1l.fadah.data.dao.SqlDao;
 import info.preva1l.fadah.data.handler.HikariHandler;
 import info.preva1l.fadah.records.CurrentListing;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 public class ListingHikariDao extends SqlDao<Listing> {
 
@@ -94,7 +96,9 @@ public class ListingHikariDao extends SqlDao<Listing> {
             try {
                 itemStack = ItemSerializer.deserialize(result.getString("item"));
             } catch (Throwable t) {
-                t.printStackTrace();
+                if (!(t instanceof ItemSerializer.InvalidVersionException)) {
+                    Fadah.getConsole().log(Level.SEVERE, "Cannot load item from database", t);
+                }
                 continue;
             }
             final String temp = result.getString("category");
