@@ -90,8 +90,13 @@ public class ListingHikariDao extends SqlDao<Listing> {
             final UUID id = UUID.fromString(result.getString("uuid"));
             final UUID ownerId = UUID.fromString(result.getString("owner_id"));
             final String ownerName = result.getString("owner_name");
-            final String str = result.getString("item");
-            final ItemStack itemStack = ItemSerializer.deserialize(str);
+            final ItemStack itemStack;
+            try {
+                itemStack = ItemSerializer.deserialize(result.getString("item"));
+            } catch (Throwable t) {
+                t.printStackTrace();
+                continue;
+            }
             final String temp = result.getString("category");
             final String category;
             final String currency;

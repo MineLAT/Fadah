@@ -10,11 +10,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectStreamConstants;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 import java.util.Base64;
-import java.util.zip.GZIPInputStream;
+import java.util.Map;
 
 @UtilityClass
 public class ItemSerializer {
@@ -42,7 +45,9 @@ public class ItemSerializer {
     @NotNull
     public static ItemStack deserialize(@NotNull String source) {
         final byte[] data = Base64.getDecoder().decode(source.replaceAll("\\s", ""));
-        if (((data[1] << 8) | data[0]) == GZIPInputStream.GZIP_MAGIC) {
+        if (((data[0] << 8) | (data[1] & 0xFF)) == ObjectStreamConstants.STREAM_MAGIC) { // Old format
+            return bukkitDeserialize(data);
+        } else {
             try {
                 return ItemStack.deserializeBytes(data);
             } catch (IllegalArgumentException e) {
@@ -52,8 +57,6 @@ public class ItemSerializer {
                     throw e;
                 }
             }
-        } else {
-            return bukkitDeserialize(data);
         }
     }
 
@@ -83,7 +86,7 @@ public class ItemSerializer {
     @NotNull
     public static ItemStack bukkitDeserialize(byte[] data) {
         final Integer version = bukkitVersion(data);
-        if (version == null || version > DATA_VERSION) {
+        if (version != null && version > DATA_VERSION) {
             throw INVALID_VERSION_EXCEPTION;
         }
 
@@ -102,26 +105,52 @@ public class ItemSerializer {
 
     @Nullable
     public static Integer bukkitVersion(byte[] data) {
-        try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(data))) {
-
-            // Skip header
-            final short magic = in.readShort();
-            if (magic != ObjectStreamConstants.STREAM_MAGIC) {
-                throw new IOException("Not a valid object stream");
+        try (WrapperInputStream in = new WrapperInputStream(new ByteArrayInputStream(data))) {
+            final Object object = in.readObject();
+            if (object instanceof Map<?, ?> map) {
+                final Object version = map.get("v");
+                if (version instanceof Number number)
+                    return number.intValue();
             }
-            // ObjectStreamConstants.STREAM_VERSION
-            final short version = in.readShort();
-
-            while (in.available() > 0) {
-                if (in.readByte() == ObjectStreamConstants.TC_STRING) {
-                    if ("v".equals(in.readUTF())) {
-                        return in.readInt();
-                    }
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
         }
         return null;
+    }
+
+    private static class WrapperInputStream extends BukkitObjectInputStream {
+
+        private static final Class<?> WRAPPER_TYPE;
+        private static final MethodHandle WRAPPER_MAP;
+
+        static {
+            try {
+                WRAPPER_TYPE = Class.forName("org.bukkit.util.io.Wrapper");
+
+                final MethodHandles.Lookup lookup = MethodHandles.lookup();
+                final Field field = WRAPPER_TYPE.getDeclaredField("map");
+                field.setAccessible(true);
+                WRAPPER_MAP = lookup.unreflectGetter(field);
+            } catch (Throwable t) {
+                throw new RuntimeException(t);
+            }
+        }
+
+        public WrapperInputStream(InputStream in) throws IOException {
+            super(in);
+        }
+
+        @Override
+        protected Object resolveObject(Object obj) throws IOException {
+            if (WRAPPER_TYPE.isInstance(obj)) {
+                try {
+                    return WRAPPER_MAP.invoke(obj);
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            return super.resolveObject(obj);
+        }
     }
 }

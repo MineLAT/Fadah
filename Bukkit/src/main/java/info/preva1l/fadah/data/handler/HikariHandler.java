@@ -16,6 +16,7 @@ import info.preva1l.fadah.records.CollectionBox;
 import info.preva1l.fadah.records.ExpiredItems;
 import info.preva1l.fadah.records.History;
 import info.preva1l.fadah.records.Listing;
+import info.preva1l.fadah.utils.ItemSerializer;
 import lombok.Getter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +48,8 @@ public class HikariHandler implements DatabaseHandler {
 
     private static final String DATABASE_FILE_NAME = "FadahData.db";
     private static final String SQL_CULL = "DELETE FROM `items` WHERE `update` < ? AND `collected` = ?;";
+    private static final String SQL_SELECT_ITEM = "SELECT `id`, `item` FROM `items`";
+    private static final String SQL_UPDATE_ITEM = "UPDATE `items` SET `item` = ? WHERE `id` = ?";
 
     private final Config.Database conf = Config.i().getDatabase();
     private final Map<Class<?>, SqlDao<?>> daos = new HashMap<>();
@@ -235,6 +238,39 @@ public class HikariHandler implements DatabaseHandler {
     @Override
     public <T> void deleteSpecific(Class<T> clazz, T t, Object o) {
         getDao(clazz).deleteSpecific(t, o);
+    }
+
+    @Override
+    public int fixAll() {
+        return connect(con -> {
+            try (PreparedStatement selectStmt = con.prepareStatement(SQL_SELECT_ITEM); PreparedStatement updateStmt = con.prepareStatement(SQL_UPDATE_ITEM)) {
+                final ResultSet result = selectStmt.executeQuery();
+
+                int count = 0;
+                while (result.next()) {
+                    final int id = result.getInt("id");
+                    final String item = result.getString("item");
+
+                    final String modified;
+                    try {
+                        modified = ItemSerializer.serialize(ItemSerializer.deserialize(item));
+                    } catch (Throwable t) {
+                        continue;
+                    }
+
+                    if (!item.equals(modified)) {
+                        count++;
+                        updateStmt.setString(1, modified);
+                        updateStmt.setInt(2, id);
+                        updateStmt.addBatch();
+                    }
+                }
+
+                updateStmt.executeBatch();
+
+                return count;
+            }
+        }, 0);
     }
 
     @NotNull
