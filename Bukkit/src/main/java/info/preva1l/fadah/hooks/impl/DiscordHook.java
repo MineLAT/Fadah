@@ -74,7 +74,7 @@ public class DiscordHook implements Hook {
     private String formatString(String str, Listing listing) {
         return StringUtils.colorize(str
                 .replace("%player%", listing.getOwnerName())
-                .replace("%item%", StringUtils.removeColorCodes(StringUtils.extractItemName(listing.getItemStack())))
+                .replace("%item%", StringUtils.removeColorCodes(StringUtils.extractItemPlainName(listing.getItemStack())))
                 .replace("%price%", new DecimalFormat(Config.i().getFormatting().getNumbers()).format(listing.getPrice())));
     }
 

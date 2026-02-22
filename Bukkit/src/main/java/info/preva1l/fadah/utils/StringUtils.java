@@ -221,4 +221,26 @@ public class StringUtils {
         }
         return builder.toString().trim();
     }
+
+    public String extractItemPlainName(ItemStack item) {
+        if (item.getItemMeta() != null && item.getItemMeta().hasDisplayName()) {
+            final StringBuilder builder = new StringBuilder();
+            final String name = item.getItemMeta().getDisplayName();
+            for (int i = 0; i < name.length(); i++) {
+                final char c = name.charAt(i);
+                if (c == '§' && i + 1 < name.length()) {
+                    i++;
+                } else {
+                    builder.append(c);
+                }
+            }
+            return builder.toString();
+        }
+        String[] split = item.getType().name().toLowerCase().split("_");
+        StringBuilder builder = new StringBuilder();
+        for (String s : split) {
+            builder.append(capitalize(s)).append(" ");
+        }
+        return builder.toString().trim();
+    }
 }
