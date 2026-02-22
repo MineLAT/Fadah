@@ -3,7 +3,7 @@ package info.preva1l.fadah.commands.subcommands;
 import info.preva1l.fadah.Fadah;
 import info.preva1l.fadah.config.Config;
 import info.preva1l.fadah.config.Lang;
-import info.preva1l.fadah.guis.ExpiredListingsMenu;
+import info.preva1l.fadah.guis.HistoryMenu;
 import info.preva1l.fadah.utils.commands.SubCommand;
 import info.preva1l.fadah.utils.commands.SubCommandArgs;
 import info.preva1l.fadah.utils.commands.SubCommandArguments;
@@ -32,6 +32,6 @@ public class HistorySubCommand extends SubCommand {
 //                    .replace("%player%", command.args()[0]));
 //            return;
 //        }
-        new ExpiredListingsMenu(command.getPlayer(), owner, 0).open(command.getPlayer());
+        new HistoryMenu(command.getPlayer(), owner, null).open(command.getPlayer());
     }
 }
