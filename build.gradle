@@ -1,18 +1,19 @@
 plugins {
     id 'java'
-    id 'io.github.goooler.shadow' version '8.1.7'
+    id 'com.gradleup.shadow' version '9.3.1'
 }
 
 group = 'info.preva1l'
 version = "2.7.2"
 
 allprojects {
-    apply plugin: 'io.github.goooler.shadow'
+    apply plugin: 'com.gradleup.shadow'
     apply plugin: 'maven-publish'
     apply plugin: 'java'
 
-    sourceCompatibility = 21
-    targetCompatibility = 21
+    java {
+        toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    }
 
     compileJava.options.encoding = 'UTF-8'
     javadoc.options.encoding = 'UTF-8'
@@ -24,28 +25,32 @@ allprojects {
     }
 
     dependencies {
-        compileOnly 'org.jetbrains:annotations:26.0.0'
-        compileOnly 'org.projectlombok:lombok:1.18.32'
-        annotationProcessor 'org.projectlombok:lombok:1.18.32'
+        compileOnly 'org.jetbrains:annotations:26.1.0'
+        compileOnly 'org.projectlombok:lombok:1.18.42'
+        annotationProcessor 'org.projectlombok:lombok:1.18.42'
         annotationProcessor 'org.jetbrains:annotations:24.0.0'
 
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
-        testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
-        testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+        testImplementation(platform('org.junit:junit-bom:5.14.0'))
+        testImplementation('org.junit.jupiter:junit-jupiter')
+        testRuntimeOnly('org.junit.platform:junit-platform-launcher')
 
-        testCompileOnly 'org.jetbrains:annotations:26.0.0'
-        testCompileOnly 'org.projectlombok:lombok:1.18.32'
-        testAnnotationProcessor 'org.projectlombok:lombok:1.18.32'
+        testCompileOnly 'org.jetbrains:annotations:26.1.0'
+        testCompileOnly 'org.projectlombok:lombok:1.18.42'
+        testAnnotationProcessor 'org.projectlombok:lombok:1.18.42'
     }
 
     test {
         useJUnitPlatform()
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
+        failOnNoDiscoveredTests = false
     }
 
     processResources {
         def props = [version: rootProject.version]
         inputs.properties props
-        filteringCharset 'UTF-8'
+        filteringCharset = 'UTF-8'
         filesMatching('plugin.yml') {
             expand props
         }
@@ -53,11 +58,11 @@ allprojects {
 }
 
 subprojects {
-    version rootProject.version
-    archivesBaseName = "${rootProject.name}-${project.name.capitalize()}"
+    version = rootProject.version
 
     shadowJar {
         destinationDirectory.set(file("$rootDir/target"))
+        archiveBaseName.set("${rootProject.name}-${project.name.capitalize()}")
         archiveClassifier.set('')
         //minimize()
     }
