@@ -11,11 +11,11 @@ repositories {
 
 dependencies {
     implementation project(":API")
-    compileOnly 'io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT'
+    compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
 
     // Support mini message format
-    compileOnly 'net.kyori:adventure-text-minimessage:4.25.0'
-    compileOnly 'net.kyori:adventure-api:4.25.0'
+    compileOnly 'net.kyori:adventure-text-minimessage:4.26.1'
+    compileOnly 'net.kyori:adventure-api:4.26.1'
     compileOnly 'net.kyori:adventure-platform-bukkit:4.4.1'
 
     compileOnly 'de.exlll:configlib-yaml:4.5.0' // Configs
@@ -39,7 +39,7 @@ dependencies {
     }
     compileOnly 'org.mongodb:mongodb-driver-sync:5.0.0'
 
-    implementation 'net.wesjd:anvilgui:1.10.4-SNAPSHOT' // Search Menu
+    implementation 'net.wesjd:anvilgui:1.10.11-SNAPSHOT' // Search Menu
 
     compileOnly 'org.mozilla:rhino:1.7.14'
 
