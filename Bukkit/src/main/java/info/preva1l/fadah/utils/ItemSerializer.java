@@ -12,7 +12,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectStreamConstants;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
@@ -22,6 +21,7 @@ import java.util.Map;
 @UtilityClass
 public class ItemSerializer {
 
+    private static final String BUKKIT_SERIALIZATION_HEADER = "rO0ABXcEAAAAAXNyABpvcmcuYnVra2l0LnV0aWwuaW8uV3JhcH";
     public static final int DATA_VERSION;
     public static final String INVALID_VERSION_MESSAGE = "Newer version! Server downgrades are not supported!";
 
@@ -44,7 +44,7 @@ public class ItemSerializer {
     @NotNull
     public static ItemStack deserialize(@NotNull String source) {
         final byte[] data = Base64.getDecoder().decode(source.replaceAll("\\s", ""));
-        if (((data[0] << 8) | (data[1] & 0xFF)) == ObjectStreamConstants.STREAM_MAGIC) { // old format
+        if (source.startsWith(BUKKIT_SERIALIZATION_HEADER)) { // old format
             return bukkitDeserialize(data);
         } else {
             try {
@@ -77,8 +77,8 @@ public class ItemSerializer {
 
     @NotNull
     public static ItemStack bukkitDeserialize(@NotNull String source) {
-        final byte[] data = Base64.getDecoder().decode(source.replaceAll("\\s", ""));
-        if (((data[0] << 8) | (data[1] & 0xFF)) == ObjectStreamConstants.STREAM_MAGIC) {
+        if (source.startsWith(BUKKIT_SERIALIZATION_HEADER)) {
+            final byte[] data = Base64.getDecoder().decode(source.replaceAll("\\s", ""));
             return bukkitDeserialize(data);
         } else {
             throw new IllegalArgumentException("Invalid item data format");

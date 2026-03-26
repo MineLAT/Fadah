@@ -260,6 +260,9 @@ public class HikariHandler implements DatabaseHandler {
 
                     if (!item.equals(modified)) {
                         count++;
+                        if (count % 1000 == 0) {
+                            System.out.println("count = " + count);
+                        }
                         updateStmt.setString(1, modified);
                         updateStmt.setInt(2, id);
                         updateStmt.addBatch();
