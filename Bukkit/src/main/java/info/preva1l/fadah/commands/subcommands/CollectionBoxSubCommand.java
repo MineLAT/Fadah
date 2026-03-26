@@ -27,11 +27,11 @@ public class CollectionBoxSubCommand extends SubCommand {
         if (command.args().length >= 1 && command.sender().hasPermission("fadah.manage.collection-box")) {
             owner = Bukkit.getOfflinePlayer(command.args()[0]);
         }
-        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
-            command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
-                    .replace("%player%", command.args()[0]));
-            return;
-        }
+//        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
+//            command.reply(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
+//                    .replace("%player%", command.args()[0]));
+//            return;
+//        }
         new CollectionBoxMenu(command.getPlayer(), owner).open(command.getPlayer());
     }
 }

@@ -27,11 +27,11 @@ public class ExpiredItemsSubCommand extends SubCommand {
         if (command.args().length >= 1 && command.sender().hasPermission("fadah.manage.expired-items")) {
             owner = Bukkit.getOfflinePlayer(command.args()[0]);
         }
-        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
-            command.sender().sendMessage(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
-                    .replace("%player%", command.args()[0]));
-            return;
-        }
+//        if (owner.getUniqueId() != command.getPlayer().getUniqueId()) {
+//            command.sender().sendMessage(Lang.i().getPrefix() + Lang.i().getErrors().getPlayerNotFound()
+//                    .replace("%player%", command.args()[0]));
+//            return;
+//        }
         new ExpiredListingsMenu(command.getPlayer(), owner, 0).open(command.getPlayer());
     }
 }
